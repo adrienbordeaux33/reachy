@@ -1,13 +1,12 @@
 
-import './App.css'
+import "./App.css";
 
 function App() {
-
   return (
-    <>
-      <h1>REACHY</h1>
-    </>
-  )
+    <main className="app">
+      <div className="game-screen">JEU</div>
+    </main>
+  );
 }
 
-export default App
+export default App;
