@@ -32,6 +32,7 @@ function PlayButton({ onClick }: PlayButtonProps) {
                 Jouer
             </span>
 
+            {/* Reflet en haut du bouton */}
             <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
         </button>
     );
