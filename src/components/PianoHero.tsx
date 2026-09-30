@@ -1,5 +1,5 @@
 import { useEffect, useRef, type PointerEvent } from "react";
-import sceneBackground from "../assets/fond_reachy.png";
+import sceneBackground from "../assets/fond.png";
 import { PauseIcon } from "./icons.tsx";
 
 interface TrailNote {
@@ -10,6 +10,8 @@ interface TrailNote {
 const FIRST = 60;
 const LAST = 72;
 const TRAIL_DURATION = 1.4;
+const LETTER_TRAIL_STEPS = 5;
+const LETTER_TRAIL_SPACING = 0.055;
 const KEYBOARD_FAR_SCALE = 0.82;
 const WHITE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 const BLACK_PITCHES = new Set([1, 3, 6, 8, 10]);
@@ -111,6 +113,47 @@ function traceRoundedPolygon(
 
 function keyboardHeight(height: number) {
   return Math.min(108, height * 0.24);
+}
+
+interface KeyLabelStyle {
+  rim: string;
+  fill: string | CanvasGradient;
+  text: string;
+  neon: string;
+}
+
+function drawKeyLabel(
+  ctx: CanvasRenderingContext2D,
+  label: string,
+  x: number,
+  y: number,
+  radius: number,
+  style: KeyLabelStyle,
+) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(x, y, radius + 1.5, 0, Math.PI * 2);
+  ctx.fillStyle = style.rim;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fillStyle = style.fill;
+  ctx.shadowColor = style.neon;
+  ctx.shadowBlur = 12;
+  ctx.fill();
+  ctx.strokeStyle = style.neon;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = style.text;
+  ctx.shadowColor = style.neon;
+  ctx.shadowBlur = 8;
+  ctx.font = `700 ${Math.max(8, radius * 1.05)}px sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x, y);
+  ctx.restore();
 }
 
 export default function PianoHero({
@@ -357,7 +400,7 @@ export default function PianoHero({
         const noteWidth = Math.max(2, w * 0.64 * perspectiveScale);
         const noteHeight = Math.max(3, 22 * noteScale);
         const alpha = 1 - progress * 0.76;
-        const hue = isBlack(note.midi) ? "245, 174, 91" : "124, 208, 164";
+        const hue = isBlack(note.midi) ? "0, 0, 0" : "255, 255, 255";
 
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -378,6 +421,30 @@ export default function PianoHero({
         );
         ctx.fill();
 
+        const label = KEY_LABELS[note.midi];
+        const blackNote = isBlack(note.midi);
+        for (let step = LETTER_TRAIL_STEPS; step >= 1; step -= 1) {
+          const trailProgress = progress - step * LETTER_TRAIL_SPACING;
+          if (trailProgress <= 0) continue;
+
+          const trailScale =
+            KEYBOARD_FAR_SCALE +
+            trailProgress * (horizonScale - KEYBOARD_FAR_SCALE);
+          const trailX = projectKeyboardX(x + w / 2, width, trailScale);
+          const trailY = keyTop - trailProgress * (keyTop - horizonY);
+
+          ctx.globalAlpha =
+            alpha * (1 - step / (LETTER_TRAIL_STEPS + 1)) * 0.42;
+          ctx.fillStyle = blackNote ? "#ffffff" : "#101713";
+          ctx.shadowColor = "rgba(255, 255, 255, 1)";
+          ctx.shadowBlur = 9 * trailScale + 2;
+          ctx.font = `700 ${Math.max(7, 15 * trailScale)}px sans-serif`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(label, trailX, trailY);
+        }
+
+        ctx.globalAlpha = alpha;
         ctx.shadowBlur = 12 * noteScale + 3;
         ctx.fillStyle = `rgba(${hue}, 1)`;
         const coreX = noteX - noteWidth / 2;
@@ -394,6 +461,14 @@ export default function PianoHero({
         ctx.strokeStyle = "rgba(255, 255, 255, 0.82)";
         ctx.lineWidth = Math.max(1, noteScale);
         ctx.stroke();
+
+        ctx.fillStyle = blackNote ? "#ffffff" : "#101713";
+        ctx.shadowColor = "rgba(255, 255, 255, 1)";
+        ctx.shadowBlur = 10 * noteScale;
+        ctx.font = `700 ${Math.max(9, 15 * noteScale)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(label, noteX, noteY);
         ctx.restore();
       }
 
@@ -433,13 +508,19 @@ export default function PianoHero({
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.restore();
-        ctx.fillStyle = "#26352d";
-        ctx.font = `600 ${Math.max(11, Math.min(15, whiteWidth * 0.34))}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.fillText(
+        const labelRadius = Math.max(7, Math.min(12, whiteWidth * 0.105));
+        drawKeyLabel(
+          ctx,
           KEY_LABELS[midi],
           projectKeyboardX(flatLeft + whiteWidth / 2, width, 0.96),
-          height - 13,
+          height - labelRadius - 3,
+          labelRadius,
+          {
+            rim: "#080b09",
+            fill: keyGradient,
+            text: "#101713",
+            neon: "#ffffff",
+          },
         );
       }
 
@@ -491,14 +572,19 @@ export default function PianoHero({
         ctx.stroke();
         ctx.restore();
 
-        ctx.beginPath();
-        ctx.fillStyle = "rgba(255, 255, 255, 0.76)";
-        ctx.font = `600 ${Math.max(9, Math.min(12, w * 0.34))}px sans-serif`;
-        ctx.textAlign = "center";
-        ctx.fillText(
+        const labelRadius = Math.max(5.5, Math.min(9, w * 0.16));
+        drawKeyLabel(
+          ctx,
           KEY_LABELS[midi],
           projectKeyboardX(x + w / 2, width, nearScale),
-          nearY - 10,
+          nearY - labelRadius - 2,
+          labelRadius,
+          {
+            rim: "#ffffff",
+            fill: keyGradient,
+            text: "#ffffff",
+            neon: "#ffffff",
+          },
         );
       }
 
