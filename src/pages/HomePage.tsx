@@ -1,77 +1,45 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-type GameMode = "upload" | "random" | "free";
-type Instrument = "piano" | "guitar" | "triangle";
+import PlayButton from "../components/ui/PlayButton";
+import { GameSetupPopup } from "../components/GameSetupPopup";
 
 function HomePage() {
+    const [isPopupOpen, setIsPopupOpen] = useState(false);
+
     const navigate = useNavigate();
 
-    const [isOpen, setIsOpen] = useState(false);
+    const handleStart = (
+        musicMode: "upload" | "random" | "free",
+        instrument: "piano" | "guitar" | "bass",
+    ) => {
+        if (musicMode === "free") {
+            navigate("/free-game", {
+                state: {
+                    instrument,
+                },
+            });
 
-    const [gameMode, setGameMode] = useState<GameMode | null>(null);
-    const [instrument, setInstrument] = useState<Instrument | null>(null);
-
-    const handleStart = () => {
-        if (!gameMode || !instrument) {
             return;
         }
 
         navigate("/game", {
             state: {
-                gameMode,
+                musicMode,
                 instrument,
             },
         });
     };
 
     return (
-        <div className="home-page">
-            <button onClick={() => setIsOpen(true)}>Jouer</button>
+        <div className="flex min-h-screen items-center justify-center p-8">
+            <PlayButton onClick={() => setIsPopupOpen(true)} />
 
-            {isOpen && (
-                <div className="game-modal">
-                    <h2>Choisis ton mode</h2>
-
-                    <div>
-                        <button onClick={() => setGameMode("upload")}>
-                            Charger ma musique
-                        </button>
-
-                        <button onClick={() => setGameMode("random")}>
-                            Musique aléatoire
-                        </button>
-
-                        <button onClick={() => setGameMode("free")}>
-                            Mode libre
-                        </button>
-                    </div>
-
-                    <h2>Choisis ta sonorité</h2>
-
-                    <div>
-                        <button onClick={() => setInstrument("piano")}>
-                            Piano
-                        </button>
-
-                        <button onClick={() => setInstrument("guitar")}>
-                            Guitare
-                        </button>
-
-                        <button onClick={() => setInstrument("triangle")}>
-                            Triangle
-                        </button>
-                    </div>
-
-                    <button
-                        onClick={handleStart}
-                        disabled={!gameMode || !instrument}
-                    >
-                        Commencer
-                    </button>
-
-                    <button onClick={() => setIsOpen(false)}>Fermer</button>
-                </div>
+            {isPopupOpen && (
+                <GameSetupPopup
+                    onClose={() => setIsPopupOpen(false)}
+                    onStart={handleStart}
+                />
             )}
         </div>
     );
