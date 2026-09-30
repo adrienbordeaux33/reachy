@@ -1,26 +1,14 @@
-import { StrictMode, useState } from "react";
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import App from "./App.tsx";
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
-  const [started, setStarted] = useState(false);
 
   return (
     <StrictMode>
-      {started ? (
         <App />
-      ) : (
-        <main className="app">
-          <button
-            type="button"
-            className="play-button"
-            onClick={() => setStarted(true)}
-          >
-            JOUER
-          </button>
-        </main>
-      )}
     </StrictMode>
   );
 }
