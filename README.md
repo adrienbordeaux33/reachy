@@ -1,75 +1,30 @@
-# React + TypeScript + Vite
+# Projet Reachy
+Projet de jeu musical sur navigateur web, développé en équipe de 3 personnes dans le cadre du cours de projet YNOV.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Chaque personne du projet à un rôle spécifique :
+- Scrum Master : Diane
+- Product Owner : Ivan
+- Développeur : Adrien
 
-Currently, two official plugins are available:
+Rôle du client :
+- Laureen
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Choix de la stack technique
+Build et Bundler - Vite
 
-## React Compiler
+Gestion de l'APP - REACT TS
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Navigation - REACT Router
 
-## Expanding the ESLint configuration
+Affichage dynamique du jeu - CANVAS 2D
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Store - À définir : Zustand ou Redux
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Suivi de projet
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Sur Notion en méthode Agile, avec un tableau Kanban pour suivre l'avancement des tâches et des sprints.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Wireframe sur Excalidraw pour la conception de l'interface utilisateur et des interactions.
 
-```
+Maquette sur Canva pour la visualisation des éléments graphiques et du design global.
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
-```
