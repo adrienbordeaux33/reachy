@@ -1,6 +1,4 @@
 import { useEffect } from "react";
-import concertBackground from "../assets/fond_reachy.png";
-
 
 interface PauseMenuProps {
     onResume: () => void;
@@ -10,11 +8,11 @@ interface PauseMenuProps {
 }
 
 export function PauseMenu({
-                              onResume,
-                              onRestart,
-                              onChangeInstrument,
-                              onQuit,
-                          }: PauseMenuProps) {
+    onResume,
+    onRestart,
+    onChangeInstrument,
+    onQuit,
+}: PauseMenuProps) {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
@@ -66,7 +64,6 @@ export function PauseMenu({
                     <div className="absolute -inset-2 -z-10 rounded-[2rem] bg-[linear-gradient(110deg,rgba(59,130,246,.30),rgba(217,70,239,.18),rgba(244,63,94,.30))] blur-3xl" />
 
                     <div className="relative overflow-hidden rounded-[2rem] border border-blue-300/20 bg-slate-900/80 px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,.45),inset_0_1px_0_rgba(255,255,255,.1)] backdrop-blur-xl sm:px-10 sm:py-10 md:px-14">
-
                         {/* Header décor */}
                         <div className="mx-auto mb-5 flex items-center justify-center gap-4">
                             <div className="h-px w-16 bg-gradient-to-r from-transparent via-cyan-400 to-fuchsia-500" />
@@ -94,7 +91,6 @@ export function PauseMenu({
 
                         {/* Actions */}
                         <div className="mx-auto mt-10 grid max-w-3xl gap-5 md:grid-cols-2">
-
                             {/* Recommencer */}
                             <button
                                 type="button"
@@ -114,7 +110,8 @@ export function PauseMenu({
                   focus-visible:ring-2
                   focus-visible:ring-white
                   cursor-pointer
-                ">
+                "
+                            >
                                 <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-blue-300/40 bg-blue-500/15 text-blue-200">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -129,8 +126,12 @@ export function PauseMenu({
                                 </div>
 
                                 <div>
-                                    <span className="block text-lg font-bold sm:text-xl">Recommencer</span>
-                                    <span className="mt-1 block text-sm text-slate-300/65">Repartir depuis le début</span>
+                                    <span className="block text-lg font-bold sm:text-xl">
+                                        Recommencer
+                                    </span>
+                                    <span className="mt-1 block text-sm text-slate-300/65">
+                                        Repartir depuis le début
+                                    </span>
                                 </div>
 
                                 <div className="ml-auto opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">
@@ -157,7 +158,8 @@ export function PauseMenu({
                   focus-visible:ring-2
                   focus-visible:ring-white
                   cursor-pointer
-                ">
+                "
+                            >
                                 <div className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-amber-300/40 bg-amber-400/10 text-amber-200">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -174,8 +176,12 @@ export function PauseMenu({
                                 </div>
 
                                 <div>
-                                    <span className="block text-lg font-bold sm:text-xl">Changer d'instrument</span>
-                                    <span className="mt-1 block text-sm text-slate-300/65">Modifier le contrôleur</span>
+                                    <span className="block text-lg font-bold sm:text-xl">
+                                        Changer d'instrument
+                                    </span>
+                                    <span className="mt-1 block text-sm text-slate-300/65">
+                                        Modifier le contrôleur
+                                    </span>
                                 </div>
 
                                 <div className="ml-auto opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">
@@ -204,7 +210,8 @@ export function PauseMenu({
                   focus-visible:ring-white
                   md:col-span-2
                   cursor-pointer
-                ">
+                "
+                            >
                                 <div className="grid h-12 w-12 place-items-center rounded-2xl border border-rose-300/40 bg-rose-400/10 text-rose-100">
                                     <svg
                                         viewBox="0 0 24 24"
@@ -220,15 +227,23 @@ export function PauseMenu({
                                 </div>
 
                                 <div className="text-left">
-                                    <span className="block text-lg font-bold sm:text-xl"> Quitter </span>
-                                    <span className="mt-1 block text-sm text-rose-100/60">Retourner au menu principal</span>
+                                    <span className="block text-lg font-bold sm:text-xl">
+                                        {" "}
+                                        Quitter{" "}
+                                    </span>
+                                    <span className="mt-1 block text-sm text-rose-100/60">
+                                        Retourner au menu principal
+                                    </span>
                                 </div>
                             </button>
                         </div>
 
                         {/* Hint */}
                         <div className="mt-8 flex items-center justify-center gap-3 text-xs text-slate-300/50">
-                            <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1"> ESC </span>
+                            <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1">
+                                {" "}
+                                ESC{" "}
+                            </span>
                             <span>pour reprendre</span>
                         </div>
                     </div>

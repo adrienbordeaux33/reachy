@@ -1,35 +1,69 @@
+import { useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { PauseMenu } from "../components/PauseMenu";
+import { MediaPlayer } from "../components/ui/MediaPlayer";
 
 type GameState = {
-    gameMode?: "upload" | "random" | "free";
-    instrument?: "piano" | "guitar" | "triangle";
+    musicMode?: "upload" | "random";
+    instrument?: "piano" | "guitar" | "bass";
 };
+
+type PlayMode = "listen" | "play";
 
 function GamePage() {
     const location = useLocation();
+    const navigate = useNavigate();
 
-    const { gameMode, instrument } = (location.state as GameState) ?? {};
+    const { musicMode, instrument } = (location.state as GameState) ?? {};
+
+    // États qui seront partagés avec le futur PianoHero
+    const [playMode, setPlayMode] = useState<PlayMode>("play");
+    const [tempo, setTempo] = useState(100);
+    const [isPaused, setIsPaused] = useState(false);
 
     return (
-        <div className="game-page">
-            <nav>
-                {/* Le composant Navbar de la team viendra ici */}
-                <p>Navbar</p>
-            </nav>
+        <div className="min-h-screen w-full">
+            {/* 
+        Futur PianoHero mode jeu
+        
+        Il recevra notamment les informations dont il a besoin :
+        - playMode
+        - tempo
+        - isPaused
+        - instrument
+        - musicMode
+        
+        On définira ses props lorsque le composant sera disponible.
+      */}
 
-            <section>
-                {/* Animation des notes */}
-                <p>Zone des notes</p>
-            </section>
+            <MediaPlayer
+                playMode={playMode}
+                tempo={tempo}
+                onPlayModeChange={setPlayMode}
+                onTempoChange={setTempo}
+                onPause={() => setIsPaused(true)}
+            />
 
-            <section>
-                {/* Le composant clavier de la team viendra ici */}
-                <p>Clavier</p>
-            </section>
+            {isPaused && (
+                <PauseMenu
+                    onResume={() => setIsPaused(false)}
+                    onRestart={() => {
+                        console.log("Recommencer");
+                        setIsPaused(false);
+                    }}
+                    onChangeInstrument={() => {
+                        console.log("Changer instrument");
+                    }}
+                    onQuit={() => navigate("/")}
+                />
+            )}
 
-            <div>
-                <p>Mode : {gameMode}</p>
+            {/* Informations temporaires pour le développement */}
+            <div className="mt-4 text-center text-sm text-white/50">
+                <p>Source : {musicMode}</p>
                 <p>Instrument : {instrument}</p>
+                <p>Pause : {isPaused ? "oui" : "non"}</p>
             </div>
         </div>
     );
