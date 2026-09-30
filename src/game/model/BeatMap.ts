@@ -1,26 +1,23 @@
 // game/model/Beatmap.ts
 
 import type { GameNote } from "./GameNote";
-import type { MusicSong } from "../../music/model/MusicSong";
-
 
 export interface Beatmap {
+    /**
+     * Durée totale du morceau.
+     */
     duration: number;
+
+    /**
+     * Notes que le joueur devra jouer.
+     */
     notes: GameNote[];
-}
 
-
-export function createBeatmap(
-    song: MusicSong,
-): Beatmap {
-    return {
-        duration: song.duration,
-
-        notes: song.notes.map((note, index) => ({
-            id: `note-${index}`,
-            midi: note.midi,
-            hitTime: note.startTime,
-            duration: note.duration,
-        })),
+    /**
+     * Plage MIDI utilisée par cette beatmap.
+     */
+    playableRange: {
+        min: number;
+        max: number;
     };
 }

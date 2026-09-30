@@ -1,20 +1,29 @@
-// game/model/GameNote.ts
+// src/game/model/GameNote.ts
 
 export interface GameNote {
+    /**
+     * Identifiant unique dans la beatmap.
+     */
     id: string;
 
     /**
-     * Note physique attendue.
+     * Note MIDI présente dans le fichier original.
+     */
+    originalMidi: number;
+
+    /**
+     * Note MIDI que le joueur doit réellement jouer.
      */
     midi: number;
 
     /**
-     * Moment où le joueur doit la jouer.
+     * Instant exact où la note doit être frappée,
+     * en secondes depuis le début du morceau.
      */
     hitTime: number;
 
     /**
-     * Durée de maintien éventuelle.
+     * Durée de la note.
      */
     duration: number;
 }

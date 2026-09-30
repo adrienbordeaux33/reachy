@@ -5,6 +5,7 @@ import { EndGamePopup } from "./components/EndGamePopup.tsx";
 import { GameSetupPopup } from "./components/GameSetupPopup.tsx";
 import { FreeModePauseMenu } from "./components/FreeModePauseMenu.tsx";
 import PianoHero from "./components/PianoHero.tsx";
+import MusicDebugPage from "./pages/MusicDebugPage.tsx";
 
 function App() {
   const [isFreeModePaused, setIsFreeModePaused] = useState(false);
@@ -38,6 +39,8 @@ function App() {
           isOpen={isFreeModePaused}
           onResume={() => setIsFreeModePaused(false)}
         />
+
+          <MusicDebugPage/>
       </div>
     </main>
   );
