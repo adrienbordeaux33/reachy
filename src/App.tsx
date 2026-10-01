@@ -6,6 +6,7 @@ import { GameSetupPopup } from "./components/GameSetupPopup.tsx";
 import { FreeModePauseMenu } from "./components/FreeModePauseMenu.tsx";
 import PianoHero from "./components/PianoHero.tsx";
 import MusicDebugPage from "./pages/MusicDebugPage.tsx";
+import SongPianoHero from "./components/song-piano/SongPianoHero.tsx";
 
 function App() {
   const [isFreeModePaused, setIsFreeModePaused] = useState(false);
@@ -13,7 +14,6 @@ function App() {
   return (
     <main className="app bg-[#030712]">
       <div className="game-screen">
-        ©
         <PianoHero
           isPaused={isFreeModePaused}
           onPause={() => setIsFreeModePaused(true)}
@@ -41,6 +41,7 @@ function App() {
         />
 
           <MusicDebugPage/>
+          <SongPianoHero />
       </div>
     </main>
   );
