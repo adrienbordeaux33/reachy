@@ -39,6 +39,7 @@ const INITIAL_STATE: GameState = {
     combo: 0,
     hits: 0,
     misses: 0,
+    wrongHits: 0
 };
 
 export class DefaultGameEngine
@@ -124,6 +125,9 @@ export class DefaultGameEngine
             );
 
         if (result === null) {
+            this.state.wrongHits += 1;
+            this.state.combo = 0;
+
             return;
         }
 

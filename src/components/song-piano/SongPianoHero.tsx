@@ -41,6 +41,7 @@ export interface SongGameResult {
     score: number;
     hits: number;
     misses: number;
+    wrongHits: number;
 }
 
 interface SongPianoHeroProps{
@@ -118,6 +119,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
             next.combo === previous.combo &&
             next.hits === previous.hits &&
             next.misses === previous.misses &&
+            next.wrongHits === previous.wrongHits &&
             next.status === previous.status
         ) {
             return;
@@ -285,6 +287,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
                     score: state.score,
                     hits: state.hits,
                     misses: state.misses,
+                    wrongHits: state.wrongHits
                 });
             }
 

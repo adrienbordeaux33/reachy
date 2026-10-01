@@ -28,21 +28,16 @@ function GamePage() {
 
     const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
 
-    const totalNotes =
+    const totalAttempts =
         gameResult === null
             ? 0
-            : gameResult.hits +
-            gameResult.misses;
+            : gameResult.hits + gameResult.misses + gameResult.wrongHits;
 
     const successRate =
         gameResult === null ||
-        totalNotes === 0
+        totalAttempts === 0
             ? 0
-            : Math.round(
-                (gameResult.hits /
-                    totalNotes) *
-                100,
-            );
+            : Math.round((gameResult.hits / totalAttempts) * 100);
 
     const handleGameFinished =
         useCallback(
