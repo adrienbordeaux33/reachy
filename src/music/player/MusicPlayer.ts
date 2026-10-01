@@ -3,22 +3,18 @@
 import type { MusicSong } from "../model/MusicSong";
 
 export class MusicPlayer {
-    private audioContext: AudioContext | null = null;
     private oscillators: OscillatorNode[] = [];
 
-    async play(song: MusicSong): Promise<void> {
+    play(
+        song: MusicSong,
+        audioContext: AudioContext,
+        startTime: number,
+    ): void {
         this.stop();
-
-        this.audioContext = new AudioContext();
-
-        if (this.audioContext.state === "suspended") {
-            await this.audioContext.resume();
-        }
-
-        const startTime = this.audioContext.currentTime;
 
         for (const note of song.notes) {
             this.scheduleNote(
+                audioContext,
                 note.midi,
                 startTime + note.startTime,
                 note.duration,
@@ -36,27 +32,19 @@ export class MusicPlayer {
         }
 
         this.oscillators = [];
-
-        if (this.audioContext) {
-            void this.audioContext.close();
-            this.audioContext = null;
-        }
     }
 
     private scheduleNote(
+        audioContext: AudioContext,
         midi: number,
         startTime: number,
         duration: number,
     ): void {
-        if (!this.audioContext) {
-            return;
-        }
-
         const oscillator =
-            this.audioContext.createOscillator();
+            audioContext.createOscillator();
 
         const gain =
-            this.audioContext.createGain();
+            audioContext.createGain();
 
         const frequency =
             440 * 2 ** ((midi - 69) / 12);
@@ -69,7 +57,10 @@ export class MusicPlayer {
         );
 
         // Petit fade-in pour éviter les clics audio.
-        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.setValueAtTime(
+            0.0001,
+            startTime,
+        );
 
         gain.gain.exponentialRampToValueAtTime(
             0.15,
@@ -77,11 +68,15 @@ export class MusicPlayer {
         );
 
         // Petit fade-out.
-        const endTime = startTime + duration;
+        const endTime =
+            startTime + duration;
 
         gain.gain.setValueAtTime(
             0.15,
-            Math.max(startTime + 0.005, endTime - 0.01),
+            Math.max(
+                startTime + 0.005,
+                endTime - 0.01,
+            ),
         );
 
         gain.gain.exponentialRampToValueAtTime(
@@ -90,7 +85,7 @@ export class MusicPlayer {
         );
 
         oscillator.connect(gain);
-        gain.connect(this.audioContext.destination);
+        gain.connect(audioContext.destination);
 
         oscillator.start(startTime);
         oscillator.stop(endTime);

@@ -37,9 +37,9 @@ export interface GameEngine {
     /**
      * Note jouée par l'utilisateur.
      */
-    notePressed(midi: number): void;
+    notePressed(midi: number, currentTime: number): void;
 
-    noteReleased(midi: number): void;
+    noteReleased(midi: number, currentTime: number): void;
 
     /**
      * Mise à jour du moteur.

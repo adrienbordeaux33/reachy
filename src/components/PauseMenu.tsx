@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import concertBackground from "../assets/fond_reachy.png";
+import concertBackground from "../assets/fond.png";
 
 
 interface PauseMenuProps {

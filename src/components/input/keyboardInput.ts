@@ -1,5 +1,3 @@
-// components/song-piano/input/keyboardInput.ts
-
 import { KEY_MAP } from "../config/pianoConfig";
 
 export interface PianoInputHandlers {
@@ -13,7 +11,9 @@ export function attachKeyboardInput(
     const handleKeyDown = (
         event: KeyboardEvent,
     ) => {
-        const midi = KEY_MAP[event.code];
+
+        const midi =
+            KEY_MAP[event.code];
 
         if (midi === undefined) {
             return;
@@ -29,7 +29,8 @@ export function attachKeyboardInput(
     const handleKeyUp = (
         event: KeyboardEvent,
     ) => {
-        const midi = KEY_MAP[event.code];
+        const midi =
+            KEY_MAP[event.code];
 
         if (midi !== undefined) {
             handlers.onRelease(midi);
