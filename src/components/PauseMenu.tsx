@@ -29,14 +29,6 @@ export function PauseMenu({
 
     return (
         <main className="relative min-h-screen isolate overflow-hidden text-white">
-            {/* Background */}
-            <div
-                className="absolute inset-0 -z-20 bg-cover bg-center"
-                style={{
-                    backgroundImage: `url(${concertBackground})`,
-                }}
-            />
-
             {/* Atmosphère */}
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,.28),transparent_28%),radial-gradient(circle_at_82%_15%,rgba(217,70,239,.24),transparent_28%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,.18),transparent_34%)]" />
 
