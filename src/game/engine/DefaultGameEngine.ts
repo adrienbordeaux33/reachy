@@ -1,9 +1,12 @@
 import type { Beatmap } from "../model/BeatMap.ts";
 import type { GameNote } from "../model/GameNote.ts";
 
+import {calculateHitScore} from "../scoring/scoreCalculator";
+
 import type {
     GameEngine,
     GameState,
+    GameNoteStatus
 } from "./GameEngine.ts";
 
 export type HitRating =
@@ -124,22 +127,27 @@ export class DefaultGameEngine
             return;
         }
 
-        this.hitNoteIds.add(result.note.id);
+        const earnedScore =
+            calculateHitScore(
+                result.rating,
+                this.state.combo,
+            );
+
+        this.hitNoteIds.add(
+            result.note.id,
+        );
+
+        this.state.score +=
+            earnedScore;
 
         this.state.hits += 1;
         this.state.combo += 1;
 
-        // Temporaire : utile pour valider
-        // le moteur avant le feedback React.
         console.log(
             result.rating,
-            "midi:",
-            result.note.midi,
-            "erreur:",
-            Math.round(
-                result.timingError * 1000,
-            ),
-            "ms",
+            `+${earnedScore}`,
+            `score: ${this.state.score}`,
+            `combo: ${this.state.combo}`,
         );
     }
 
@@ -313,5 +321,19 @@ export class DefaultGameEngine
         this.state = {
             ...INITIAL_STATE,
         };
+    }
+
+    getNoteStatus(
+        noteId: string,
+    ): GameNoteStatus {
+        if (this.hitNoteIds.has(noteId)) {
+            return "hit";
+        }
+
+        if (this.missedNoteIds.has(noteId)) {
+            return "missed";
+        }
+
+        return "pending";
     }
 }

@@ -6,6 +6,12 @@ export type GameStatus =
     | "paused"
     | "finished";
 
+export type GameNoteStatus =
+    | "pending"
+    | "hit"
+    | "missed";
+
+
 export interface GameState {
     status: GameStatus;
 
@@ -25,27 +31,26 @@ export interface GameEngine {
     load(beatmap: Beatmap): void;
 
     start(): void;
-
     pause(): void;
-
     resume(): void;
-
     restart(): void;
-
     stop(): void;
 
-    /**
-     * Note jouée par l'utilisateur.
-     */
-    notePressed(midi: number, currentTime: number): void;
+    notePressed(
+        midi: number,
+        currentTime: number,
+    ): void;
 
-    noteReleased(midi: number, currentTime: number): void;
+    noteReleased(
+        midi: number,
+        currentTime: number,
+    ): void;
 
-    /**
-     * Mise à jour du moteur.
-     */
     update(currentTime: number): void;
 
     getState(): Readonly<GameState>;
-}
 
+    getNoteStatus(
+        noteId: string,
+    ): GameNoteStatus;
+}

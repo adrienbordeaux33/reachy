@@ -1,6 +1,9 @@
 import type { Beatmap } from "../model/BeatMap";
 import type { GameNote } from "../model/GameNote";
 
+
+export const NOTE_TRAVEL_TIME = 4;
+
 export interface VisibleGameNote {
     note: GameNote;
     progress: number;
@@ -8,10 +11,12 @@ export interface VisibleGameNote {
 
 export interface GameTimelineConfig {
     travelTime: number;
+    postHitTime: number;
 }
 
 const DEFAULT_CONFIG: GameTimelineConfig = {
-    travelTime: 2,
+    travelTime: NOTE_TRAVEL_TIME,
+    postHitTime: 0.15,
 };
 
 export class GameTimeline {
@@ -35,9 +40,13 @@ export class GameTimeline {
                     note.hitTime -
                     this.config.travelTime;
 
+                const disappearTime =
+                    note.hitTime +
+                    this.config.postHitTime;
+
                 return (
                     currentTime >= spawnTime &&
-                    currentTime <= note.hitTime
+                    currentTime <= disappearTime
                 );
             })
             .map((note) => {
