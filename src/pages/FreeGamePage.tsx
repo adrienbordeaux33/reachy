@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FreeModePauseMenu } from "../components/FreeModePauseMenu";
 import PianoHero from "../components/PianoHero";
@@ -11,10 +11,30 @@ type FreeGameState = {
 function FreeGamePage() {
     const location = useLocation();
     const navigate = useNavigate();
-    const { instrument } = (location.state as FreeGameState) ?? {};
+    const { instrument: initialInstrument } =
+        (location.state as FreeGameState) ?? {};
+
+    const [instrument, setInstrument] = useState<
+        "piano" | "guitar" | "bass" | undefined
+    >(initialInstrument);
     const [isPaused, setIsPaused] = useState(false);
     const [shouldSaveRecording, setShouldSaveRecording] = useState(false);
     const [saveStatus, setSaveStatus] = useState("");
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "Space" && !isPaused) {
+                event.preventDefault();
+                setIsPaused(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isPaused]);
 
     const downloadRecording = (recording: Blob) => {
         const extension = recording.type.includes("mp4")
@@ -60,6 +80,10 @@ function FreeGamePage() {
                     </div>
                     {isPaused && (
                         <FreeModePauseMenu
+                            onChangeInstrument={(newInstrument) => {
+                                setInstrument(newInstrument);
+                                setIsPaused(false);
+                            }}
                             isOpen
                             saveStatus={saveStatus}
                             isSaveDisabled={shouldSaveRecording}

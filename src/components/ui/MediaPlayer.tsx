@@ -17,6 +17,7 @@ export function MediaPlayer({
     onTempoChange,
     onPause,
 }: MediaPlayerProps) {
+    const isFreeMode = playMode === undefined && tempo === undefined;
     const decreaseTempo = () => {
         if (tempo === undefined || !onTempoChange) return;
 
@@ -39,9 +40,10 @@ export function MediaPlayer({
 
     return (
         <div
-            className="
+            className={`
         mx-auto flex w-full max-w-[1000px]
-        items-center justify-between
+        items-center
+        ${isFreeMode ? "justify-center" : "justify-between"}
         gap-6
         rounded-2xl
         border border-white/20
@@ -49,7 +51,7 @@ export function MediaPlayer({
         px-6 py-4
         text-white
         backdrop-blur-xl
-      "
+    `}
         >
             {/* MODE */}
             {playMode !== undefined && onPlayModeChange && (

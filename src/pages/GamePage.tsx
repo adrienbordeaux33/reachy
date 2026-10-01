@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { PauseMenu } from "../components/PauseMenu";
@@ -23,6 +23,21 @@ function GamePage() {
     const [playMode, setPlayMode] = useState<PlayMode>("play");
     const [tempo, setTempo] = useState(100);
     const [isPaused, setIsPaused] = useState(false);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.code === "Space" && !isPaused) {
+                event.preventDefault();
+                setIsPaused(true);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isPaused]);
 
     return (
         <div className="min-h-screen w-full">
