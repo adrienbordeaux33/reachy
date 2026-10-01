@@ -3,7 +3,7 @@
 import {
     KEYBOARD_FAR_SCALE,
     WHITE_NOTES,
-    isBlackKey,
+    isBlackKey, TRACK_FAR_SCALE,
 } from "../config/pianoConfig";
 
 export interface Point {
@@ -74,4 +74,74 @@ export function getPerspectiveScale(
         KEYBOARD_FAR_SCALE +
         depth * (1 - KEYBOARD_FAR_SCALE)
     );
+}
+export function lerp(
+    from: number,
+    to: number,
+    progress: number,
+): number {
+    return from + (to - from) * progress;
+}
+
+export function clamp01(
+    value: number,
+): number {
+    return Math.max(
+        0,
+        Math.min(1, value),
+    );
+}
+
+export function getTrackTopY(
+    height: number,
+): number {
+    // On remonte légèrement le début de la piste.
+    return height * 0.015;
+}
+
+export function getTrackProgressY(
+    progress: number,
+    height: number,
+): number {
+    const keyTop =
+        height - getKeyboardHeight(height);
+
+    const trackTopY =
+        getTrackTopY(height);
+
+    return lerp(
+        trackTopY,
+        keyTop,
+        clamp01(progress),
+    );
+}
+
+export function getTrackScale(
+    progress: number,
+): number {
+    return lerp(
+        TRACK_FAR_SCALE,
+        KEYBOARD_FAR_SCALE,
+        clamp01(progress),
+    );
+}
+
+export function projectTrackX(
+    flatX: number,
+    progress: number,
+    width: number,
+): number {
+    return projectKeyboardX(
+        flatX,
+        width,
+        getTrackScale(progress),
+    );
+}
+
+export function getVisualProgress(
+    progress: number,
+): number {
+    const t = clamp01(progress);
+
+    return 1 - Math.pow(1 - t, 1.20);
 }
