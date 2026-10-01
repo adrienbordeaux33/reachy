@@ -6,6 +6,7 @@ import { MediaPlayer } from "../components/ui/MediaPlayer";
 import SongPianoHero, {type SongGameResult} from "../components/song-piano/SongPianoHero";
 import { EndGamePopup } from "../components/EndGamePopup";
 import {getSongDefinition, type SongId,} from "../music/library/SongLibrary";
+import type {PlayMode} from "../game/model/PlayMode.ts";
 
 type GameState = {
     musicMode?: "upload" | "library";
@@ -13,7 +14,6 @@ type GameState = {
     songId?: SongId;
 };
 
-type PlayMode = "listen" | "play";
 
 function GamePage() {
     const location = useLocation();
@@ -58,12 +58,30 @@ function GamePage() {
         setIsPaused(false);
     };
 
+    const handlePlayModeChange = (
+        newMode: PlayMode,
+    ) => {
+        if (newMode === playMode) {
+            return;
+        }
+
+        setPlayMode(newMode);
+
+        setGameResult(null);
+        setIsPaused(false);
+
+        setRestartKey(
+            (previous) => previous + 1,
+        );
+    };
+
     return (
         <div className="min-h-screen w-full pt-30">
 
             <SongPianoHero
                 key={selectedSong.id}
                 songSource={selectedSong.source}
+                playMode={playMode}
                 isPaused={isPaused}
                 restartKey={restartKey}
                 onFinished={handleGameFinished}
@@ -73,7 +91,7 @@ function GamePage() {
             <MediaPlayer
                 playMode={playMode}
                 tempo={tempo}
-                onPlayModeChange={setPlayMode}
+                onPlayModeChange={handlePlayModeChange}
                 onTempoChange={setTempo}
                 onPause={() => setIsPaused(true)}
             />
@@ -92,6 +110,7 @@ function GamePage() {
             {gameResult !== null && (
                 <div className="fixed inset-0 z-50">
                     <EndGamePopup
+                        playMode={playMode}
                         score={gameResult.score}
                         successRate={successRate}
                         onRestart={handleRestart}

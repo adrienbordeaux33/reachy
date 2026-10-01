@@ -15,9 +15,12 @@ import { MusicPlayer } from "../../music/player/MusicPlayer";
 import {GameClock} from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
+import type {PlayMode} from "../../game/model/PlayMode.ts";
+
 
 
 export interface SongGameResult {
+    mode: PlayMode;
     score: number;
     hits: number;
     misses: number;
@@ -27,6 +30,7 @@ export interface SongGameResult {
 interface SongPianoHeroProps{
     songSource: string;
     isPaused?: boolean;
+    playMode: "listen" | "play";
     restartKey?: number;
     onFinished: (result: SongGameResult) => void;
 }
@@ -35,13 +39,9 @@ const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({songSource, isPaused, restartKey, onFinished} : SongPianoHeroProps) {
+export default function SongPianoHero({songSource, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
 
-    const {
-        song,
-        engine,
-        timeline,
-    } = useMemo(() => {
+    const {song, engine, timeline} = useMemo(() => {
         const parser = new TxtMusicParser();
 
         const beatmapGenerator = new BeatmapGenerator();
@@ -101,26 +101,27 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
             );
         }, []);
 
-    /**
-     * Appelé directement par le Canvas
-     * pendant requestAnimationFrame.
-     *
-     * Aucun setState React ici.
-     */
     const getVisibleNotes =
         useCallback(() => {
             const currentTime =
                 getSongTime();
 
-            return timeline
-                .getVisibleNotes(currentTime)
-                .filter(({ note }) => {
-                    return (
-                        engine.getNoteStatus(note.id) !==
-                        "hit"
-                    );
-                });
-        }, [engine, getSongTime, timeline]);
+            const visibleNotes =
+                timeline.getVisibleNotes(
+                    currentTime,
+                );
+
+            if (playMode === "listen") {
+                return visibleNotes;
+            }
+
+            return visibleNotes.filter(
+                ({ note }) =>
+                    engine.getNoteStatus(
+                        note.id,
+                    ) !== "hit",
+            );
+        }, [getSongTime, timeline, engine, playMode]);
 
     const syncGameState = useCallback(() => {
         const next =
@@ -230,7 +231,7 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
         const detachKeyboard =
             attachKeyboardInput({
                 onPress: (midi) => {
-                    if (isPaused) {
+                    if (isPaused || playMode === "listen") {
                         return;
                     }
 
@@ -260,7 +261,7 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
                         return next;
                     });
 
-                    if (isPaused) {
+                    if (isPaused || playMode === "listen") {
                         return;
                     }
 
@@ -273,7 +274,7 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
             });
 
         return detachKeyboard;
-    }, [isPaused, getSongTime, syncGameState, engine]);
+    }, [isPaused, getSongTime, syncGameState, engine, playMode]);
 
     useEffect(() => {
         let frameId = 0;
@@ -299,6 +300,7 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
                 setIsPlaying(false);
 
                 onFinished({
+                    mode: playMode,
                     score: state.score,
                     hits: state.hits,
                     misses: state.misses,
@@ -377,48 +379,49 @@ export default function SongPianoHero({songSource, isPaused, restartKey, onFinis
                             {song.title ?? "Mario"}
                         </div>
                     </div>
+                    {playMode === "play" && (
+                        <div className=" flex items-center gap-8 text-white">
+                            <div className="text-center">
+                                <div  className=" text-xs uppercase tracking-widertext-white/50 ">
+                                    Score
+                                </div>
 
-                    <div className=" flex items-center gap-8 text-white">
-                        <div className="text-center">
-                            <div  className=" text-xs uppercase tracking-widertext-white/50 ">
-                                Score
+                                <div className=" text-2xl font-bold ">
+                                    {gameState.score}
+                                </div>
                             </div>
 
-                            <div className=" text-2xl font-bold ">
-                                {gameState.score}
+                            <div className="text-center">
+                                <div className=" text-xs uppercase tracking-widertext-white/50 ">
+                                    Combo
+                                </div>
+
+                                <div className=" text-2xl font-bold  ">
+                                    x{gameState.combo}
+                                </div>
+                            </div>
+
+                            <div className="text-center">
+                                <div className=" text-xs uppercase tracking-widertext-white/50">
+                                    Hits
+                                </div>
+
+                                <div className="text-xl font-semibold">
+                                    {gameState.hits}
+                                </div>
+                            </div>
+
+                            <div className="text-center">
+                                <div className="text-xs uppercase tracking-wider text-white/50">
+                                    Miss
+                                </div>
+
+                                <div className="text-xl font-semibold">
+                                    {gameState.misses}
+                                </div>
                             </div>
                         </div>
-
-                        <div className="text-center">
-                            <div className=" text-xs uppercase tracking-widertext-white/50 ">
-                                Combo
-                            </div>
-
-                            <div className=" text-2xl font-bold  ">
-                                x{gameState.combo}
-                            </div>
-                        </div>
-
-                        <div className="text-center">
-                            <div className=" text-xs uppercase tracking-widertext-white/50">
-                                Hits
-                            </div>
-
-                            <div className="text-xl font-semibold">
-                                {gameState.hits}
-                            </div>
-                        </div>
-
-                        <div className="text-center">
-                            <div className="text-xs uppercase tracking-wider text-white/50">
-                                Miss
-                            </div>
-
-                            <div className="text-xl font-semibold">
-                                {gameState.misses}
-                            </div>
-                        </div>
-                    </div>
+                        )}
 
                     <button
                         type="button"

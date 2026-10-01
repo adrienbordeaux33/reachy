@@ -1,6 +1,8 @@
 import concertBackground from "../assets/fond.png";
+import type {PlayMode} from "../game/model/PlayMode.ts";
 
 interface EndGamePopupProps {
+    playMode: PlayMode;
     score?: number;
     successRate?: number;
     onRestart?: () => void;
@@ -8,6 +10,7 @@ interface EndGamePopupProps {
 }
 
 export function EndGamePopup({
+    playMode,
     score = 236,
     successRate = 85,
     onRestart = () => {},
@@ -60,34 +63,38 @@ export function EndGamePopup({
                         {/* Title */}
                         <div className="text-center">
                             <h1 className="inline-block bg-gradient-to-r from-white via-cyan-100 to-fuchsia-200 bg-clip-text text-4xl font-black italic tracking-[-0.045em] text-transparent drop-shadow-[0_0_18px_rgba(255,255,255,.18)] sm:text-6xl md:text-7xl">
-                                DÉFI TERMINÉ !
+                                {playMode === "play"
+                                    ? "DÉFI TERMINÉ !"
+                                    : "LECTURE TERMINÉE !"}
                             </h1>
 
                             <div className="mx-auto mt-1 h-2 max-w-xl -rotate-2 rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-cyan-400 opacity-95" />
                         </div>
 
                         {/* Stats */}
-                        <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center justify-center gap-5 text-center sm:flex-row sm:gap-8">
-                            <div className="flex items-baseline gap-3">
-                                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                                    Score :
-                                </span>
-                                <span className="text-3xl font-black text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.45)] sm:text-4xl">
-                                    {score}
-                                </span>
-                            </div>
+                        {playMode === "play" && (
+                            <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center justify-center gap-5 text-center sm:flex-row sm:gap-8">
+                                    <div className="flex items-baseline gap-3">
+                                        <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
+                                            Score :
+                                        </span>
+                                        <span className="text-3xl font-black text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.45)] sm:text-4xl">
+                                            {score}
+                                        </span>
+                                    </div>
 
-                            <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent sm:block" />
+                                    <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent sm:block" />
 
-                            <div className="flex items-baseline gap-3">
-                                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                                    Réussite :
-                                </span>
-                                <span className="text-3xl font-black text-fuchsia-300 drop-shadow-[0_0_12px_rgba(217,70,239,.45)] sm:text-4xl">
-                                    {successRate} %
-                                </span>
-                            </div>
-                        </div>
+                                    <div className="flex items-baseline gap-3">
+                                        <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
+                                            Réussite :
+                                        </span>
+                                        <span className="text-3xl font-black text-fuchsia-300 drop-shadow-[0_0_12px_rgba(217,70,239,.45)] sm:text-4xl">
+                                            {successRate} %
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
 
                         {/* Actions */}
                         <div className="mx-auto mt-10 grid max-w-3xl gap-5 md:grid-cols-2">
