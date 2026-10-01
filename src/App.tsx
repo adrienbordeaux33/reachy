@@ -1,8 +1,8 @@
-// import { Route, Routes } from "react-router-dom";
-//
-// import HomePage from "./pages/HomePage";
-// import GamePage from "./pages/GamePage";
-// import FreeGamePage from "./pages/FreeGamePage";
+import { Route, Routes } from "react-router-dom";
+
+import HomePage from "./pages/HomePage";
+import GamePage from "./pages/GamePage";
+import FreeGamePage from "./pages/FreeGamePage";
 
 import "./App.css";
 import SongPianoHero from "./components/song-piano/SongPianoHero.tsx";
