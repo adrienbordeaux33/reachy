@@ -28,27 +28,24 @@ export function PauseMenu({
     }, [onResume]);
 
     return (
-        <main className="relative min-h-screen isolate overflow-hidden text-white">
+        <main className="fixed inset-0 z-50 isolate overflow-auto bg-black/60 text-white backdrop-blur-sm">
+            {" "}
             {/* Atmosphère */}
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_18%_18%,rgba(59,130,246,.28),transparent_28%),radial-gradient(circle_at_82%_15%,rgba(217,70,239,.24),transparent_28%),radial-gradient(circle_at_50%_100%,rgba(14,165,233,.18),transparent_34%)]" />
-
             {/* Vignette */}
             <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle,transparent_35%,rgba(0,0,0,.68)_100%)]" />
-
             {/* Décor haut gauche */}
             <div className="pointer-events-none absolute left-5 top-5 hidden gap-2 md:flex">
                 <span className="h-1.5 w-24 rotate-[-32deg] rounded-full bg-cyan-400 shadow-[0_0_18px_rgba(34,211,238,.8)]" />
                 <span className="h-1.5 w-20 rotate-[-32deg] rounded-full bg-blue-500 shadow-[0_0_18px_rgba(59,130,246,.8)]" />
                 <span className="h-1.5 w-16 rotate-[-32deg] rounded-full bg-fuchsia-500 shadow-[0_0_18px_rgba(217,70,239,.8)]" />
             </div>
-
             {/* Décor bas droite */}
             <div className="pointer-events-none absolute bottom-6 right-5 hidden gap-2 md:flex">
                 <span className="h-1.5 w-20 rotate-[-32deg] rounded-full bg-blue-500 shadow-[0_0_18px_rgba(59,130,246,.8)]" />
                 <span className="h-1.5 w-28 rotate-[-32deg] rounded-full bg-fuchsia-500 shadow-[0_0_18px_rgba(217,70,239,.8)]" />
                 <span className="h-1.5 w-12 rotate-[-32deg] rounded-full bg-cyan-400 shadow-[0_0_18px_rgba(34,211,238,.8)]" />
             </div>
-
             {/* Modal */}
             <section className="flex min-h-screen items-center justify-center p-5 sm:p-8">
                 <div className="relative w-full max-w-4xl">

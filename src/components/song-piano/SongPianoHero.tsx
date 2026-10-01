@@ -1,4 +1,4 @@
-import sceneBackground from "../../assets/fond_reachy.png";
+import sceneBackground from "../../assets/fond.png";
 import PianoCanvas from "../canvas/PianoCanvas.tsx";
 
 export default function SongPianoHero() {
@@ -32,13 +32,9 @@ export default function SongPianoHero() {
             >
                 {/* Future UI */}
                 <header className="flex min-h-20 items-center justify-between">
-                    <div>
-                        {/* score */}
-                    </div>
+                    <div>{/* score */}</div>
 
-                    <div>
-                        {/* combo / progression */}
-                    </div>
+                    <div>{/* combo / progression */}</div>
                 </header>
 
                 {/* Zone de jeu */}

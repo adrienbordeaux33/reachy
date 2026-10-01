@@ -3,10 +3,12 @@ import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { PauseMenu } from "../components/PauseMenu";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
+import SongPianoHero from "../components/song-piano/SongPianoHero";
 
 type GameState = {
-    musicMode?: "upload" | "random";
+    musicMode?: "upload" | "library";
     instrument?: "piano" | "guitar" | "bass";
+    songId?: "mario" | "pirate";
 };
 
 type PlayMode = "listen" | "play";
@@ -15,8 +17,8 @@ function GamePage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const { musicMode, instrument } = (location.state as GameState) ?? {};
-
+    const { musicMode, instrument, songId } =
+        (location.state as GameState) ?? {};
     // États qui seront partagés avec le futur PianoHero
     const [playMode, setPlayMode] = useState<PlayMode>("play");
     const [tempo, setTempo] = useState(100);
@@ -24,18 +26,7 @@ function GamePage() {
 
     return (
         <div className="min-h-screen w-full">
-            {/* 
-        Futur PianoHero mode jeu
-        
-        Il recevra notamment les informations dont il a besoin :
-        - playMode
-        - tempo
-        - isPaused
-        - instrument
-        - musicMode
-        
-        On définira ses props lorsque le composant sera disponible.
-      */}
+            <SongPianoHero />
 
             <MediaPlayer
                 playMode={playMode}
@@ -64,6 +55,7 @@ function GamePage() {
                 <p>Source : {musicMode}</p>
                 <p>Instrument : {instrument}</p>
                 <p>Pause : {isPaused ? "oui" : "non"}</p>
+                <p>Morceau : {songId ?? "aucun"}</p>
             </div>
         </div>
     );
