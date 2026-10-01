@@ -1,12 +1,14 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import concertBackground from "../assets/fond.png";
 import { NeonDecoration } from "./NeonDecoration";
+import { InstrumentSelector, type Instrument } from "./InstrumentSelector";
 
 interface FreeModePauseMenuProps {
   isOpen?: boolean;
   duration?: string;
+  instrument: Instrument;
   onResume?: () => void;
-  onChangeInstrument?: () => void;
+  onChangeInstrument?: (instrument: Instrument) => void;
   onRestart?: () => void;
   onListen?: () => void;
   onSave?: () => void;
@@ -17,7 +19,8 @@ interface FreeModePauseMenuProps {
 
 export function FreeModePauseMenu({
   isOpen = false,
-  duration = "2:44",
+  duration = "0:00",
+  instrument,
   onResume = () => {},
   onChangeInstrument = () => {},
   onRestart = () => {},
@@ -27,6 +30,9 @@ export function FreeModePauseMenu({
   isSaveDisabled = false,
   onQuit = () => {},
 }: FreeModePauseMenuProps) {
+  const [isInstrumentSelectorOpen, setIsInstrumentSelectorOpen] =
+    useState(false);
+
   if (!isOpen) return null;
 
   return (
@@ -109,70 +115,90 @@ export function FreeModePauseMenu({
             </header>
 
             {/* Actions */}
-            <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
-              <ActionButton
-                variant="green"
-                icon={<PlayIcon />}
-                onClick={onResume}
-              >
-                Reprendre
-              </ActionButton>
+            {isInstrumentSelectorOpen ? (
+              <div className="mx-auto w-full max-w-3xl space-y-6">
+                <InstrumentSelector
+                  value={instrument}
+                  onChange={onChangeInstrument}
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsInstrumentSelectorOpen(false)}
+                  className="mx-auto block rounded-lg border border-white/30 px-5 py-3 font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  Retour au menu
+                </button>
+              </div>
+            ) : (
+              <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
+                <ActionButton
+                  variant="green"
+                  icon={<PlayIcon />}
+                  onClick={onResume}
+                >
+                  Reprendre
+                </ActionButton>
 
-              {/* Durée */}
-              <ActionButton variant="cyan" icon={<DurationIcon />}>
-                <span className="flex items-baseline gap-3">
-                  <span className="uppercase">Durée :</span>
+                {/* Durée */}
+                <ActionButton variant="cyan" icon={<DurationIcon />}>
+                  <span className="flex items-baseline gap-3">
+                    <span className="uppercase">Durée :</span>
 
-                  <strong className="text-3xl text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.6)]">
-                    {duration}
-                  </strong>
-                </span>
-              </ActionButton>
+                    <strong className="text-3xl text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.6)]">
+                      {duration}
+                    </strong>
+                  </span>
+                </ActionButton>
 
-              {/* Instrument */}
-              <ActionButton
-                variant="orange"
-                icon={<SlidersIcon />}
-                onClick={onChangeInstrument}
-              >
-                Changer
-                <br />
-                d&apos;instrument
-              </ActionButton>
+                {/* Instrument */}
+                <ActionButton
+                  variant="orange"
+                  icon={<SlidersIcon />}
+                  onClick={() => setIsInstrumentSelectorOpen(true)}
+                >
+                  Changer
+                  <br />
+                  d&apos;instrument
+                </ActionButton>
 
-              {/* Recommencer */}
-              <ActionButton
-                variant="cyan"
-                icon={<RestartIcon />}
-                onClick={onRestart}
-              >
-                Recommencer
-              </ActionButton>
+                {/* Recommencer */}
+                <ActionButton
+                  variant="cyan"
+                  icon={<RestartIcon />}
+                  onClick={onRestart}
+                >
+                  Recommencer
+                </ActionButton>
 
-              {/* Réécouter */}
-              <ActionButton
-                variant="purple"
-                icon={<MusicIcon />}
-                onClick={onListen}
-              >
-                Réécouter
-              </ActionButton>
+                {/* Réécouter */}
+                <ActionButton
+                  variant="purple"
+                  icon={<MusicIcon />}
+                  onClick={onListen}
+                >
+                  Réécouter
+                </ActionButton>
 
-              {/* Enregistrer */}
-              <ActionButton
-                variant="green"
-                icon={<SaveIcon />}
-                onClick={onSave}
-                disabled={isSaveDisabled}
-              >
-                Enregistrer
-              </ActionButton>
+                {/* Enregistrer */}
+                <ActionButton
+                  variant="green"
+                  icon={<SaveIcon />}
+                  onClick={onSave}
+                  disabled={isSaveDisabled}
+                >
+                  Enregistrer
+                </ActionButton>
 
-              {/* Quitter */}
-              <ActionButton variant="pink" icon={<ExitIcon />} onClick={onQuit}>
-                Quitter
-              </ActionButton>
-            </div>
+                {/* Quitter */}
+                <ActionButton
+                  variant="pink"
+                  icon={<ExitIcon />}
+                  onClick={onQuit}
+                >
+                  Quitter
+                </ActionButton>
+              </div>
+            )}
 
             {saveStatus && (
               <p
