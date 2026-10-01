@@ -10,8 +10,9 @@ function HomePage() {
     const navigate = useNavigate();
 
     const handleStart = (
-        musicMode: "upload" | "random" | "free",
+        musicMode: "upload" | "library" | "free",
         instrument: "piano" | "guitar" | "bass",
+        songId?: "mario" | "pirate",
     ) => {
         if (musicMode === "free") {
             navigate("/free-game", {
@@ -27,6 +28,7 @@ function HomePage() {
             state: {
                 musicMode,
                 instrument,
+                songId,
             },
         });
     };

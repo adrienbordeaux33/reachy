@@ -1,18 +1,31 @@
 import { useState } from "react";
-import { InstrumentSelector, type Instrument } from "./InstrumentSelector.tsx";
+import { InstrumentSelector } from "./InstrumentSelector.tsx";
 import { SelectionButton } from "./SelectionButton.tsx";
 import { NeonDecoration } from "./NeonDecoration";
-import { MusicIcon, PlayIcon, SlidersIcon, ShuffleIcon } from "./icons.tsx";
+import {
+  PianoIcon,
+  GuitarIcon,
+  MusicIcon,
+  PlayIcon,
+  SlidersIcon,
+} from "./icons.tsx";
 
-type MusicMode = "upload" | "random" | "free";
+type MusicMode = "upload" | "library" | "free";
 
+type SongId = "mario" | "pirate";
+type Instrument = "piano" | "guitar" | "bass";
 interface GameSetupPopupProps {
-  onStart: (musicMode: MusicMode, instrument: Instrument) => void;
+  onStart: (
+    musicMode: MusicMode,
+    instrument: Instrument,
+    songId?: SongId,
+  ) => void;
   onClose: () => void;
 }
 
 export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
   const [musicMode, setMusicMode] = useState<MusicMode>("upload");
+  const [songId, setSongId] = useState<SongId>("mario");
 
   const [instrument, setInstrument] = useState<Instrument>("piano");
 
@@ -34,7 +47,7 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
       <section className="flex min-h-screen items-center justify-center p-5 sm:p-8">
         <div className="relative w-full max-w-6xl">
           {/* Glow extérieur */}
-          <div className="absolute -inset-3 -z-10 rounded-[2.5rem]  blur-3xl" />
+          <div className="absolute -inset-3 -z-10 rounded-[2.5rem] blur-3xl" />
 
           <div
             className="
@@ -63,6 +76,7 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
             >
               ×
             </button>
+
             {/* Bordure colorée */}
             <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] border-2 border-transparent [mask-composite:exclude]" />
 
@@ -91,16 +105,39 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                 ma musique
               </SelectionButton>
 
-              <SelectionButton
-                active={musicMode === "random"}
-                variant="purple"
-                icon={<ShuffleIcon />}
-                onClick={() => setMusicMode("random")}
-              >
-                Musique
-                <br />
-                aléatoire
-              </SelectionButton>
+              <div className="flex flex-col gap-3">
+                <SelectionButton
+                  active={musicMode === "library"}
+                  variant="purple"
+                  icon={<MusicIcon />}
+                  onClick={() => setMusicMode("library")}
+                >
+                  Choisir
+                  <br />
+                  un morceau
+                </SelectionButton>
+
+                {musicMode === "library" && (
+                  <select
+                    value={songId}
+                    onChange={(event) =>
+                      setSongId(event.target.value as SongId)
+                    }
+                    className="
+                      w-full rounded-xl
+                      border border-purple-400/40
+                      bg-slate-950/80
+                      px-4 py-3
+                      text-white
+                      outline-none
+                      focus:border-purple-300
+                    "
+                  >
+                    <option value="mario">Mario</option>
+                    <option value="pirate">Pirates des Caraïbes</option>
+                  </select>
+                )}
+              </div>
 
               <SelectionButton
                 active={musicMode === "free"}
@@ -126,12 +163,37 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
             {/* Instruments */}
             <InstrumentSelector value={instrument} onChange={setInstrument} />
 
-            {/* CTA */}
-            <div className="mt-10 flex justify-center">
-              <button
-                type="button"
-                onClick={() => onStart(musicMode, instrument)}
-                className="
+            <SelectionButton
+              active={instrument === "guitar"}
+              variant="purple"
+              icon={<GuitarIcon />}
+              onClick={() => setInstrument("guitar")}
+            >
+              Guitare
+            </SelectionButton>
+
+            <SelectionButton
+              active={instrument === "bass"}
+              variant="pink"
+              icon={<GuitarIcon />}
+              onClick={() => setInstrument("bass")}
+            >
+              Basse
+            </SelectionButton>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-10 flex justify-center">
+            <button
+              type="button"
+              onClick={() =>
+                onStart(
+                  musicMode,
+                  instrument,
+                  musicMode === "library" ? songId : undefined,
+                )
+              }
+              className="
     group relative
     flex min-h-24 w-full max-w-xl
     items-center justify-center gap-5
@@ -151,26 +213,26 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     focus-visible:ring-2
     focus-visible:ring-white
     "
-              >
-                <PlayIcon />
+            >
+              <PlayIcon />
 
-                <span className="text-xl font-black uppercase tracking-wide sm:text-2xl">
-                  Commencer
-                </span>
+              <span className="text-xl font-black uppercase tracking-wide sm:text-2xl">
+                Commencer
+              </span>
 
-                {/* Reflet */}
-                <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
-              </button>
-            </div>
+              {/* Reflet */}
+              <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+            </button>
+          </div>
 
-            {/* Décoration interne */}
-            <div className="pointer-events-none absolute bottom-8 right-10 hidden rotate-[-32deg] gap-2 lg:flex">
-              <span className="h-1 w-20 rounded-full bg-violet-500" />
-              <span className="h-1 w-16 rounded-full bg-blue-500" />
-              <span className="h-1 w-12 rounded-full bg-cyan-400" />
-            </div>
+          {/* Décoration interne */}
+          <div className="pointer-events-none absolute bottom-8 right-10 hidden rotate-[-32deg] gap-2 lg:flex">
+            <span className="h-1 w-20 rounded-full bg-violet-500" />
+            <span className="h-1 w-16 rounded-full bg-blue-500" />
+            <span className="h-1 w-12 rounded-full bg-cyan-400" />
           </div>
         </div>
+        +{" "}
       </section>
     </div>
   );

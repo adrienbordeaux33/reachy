@@ -6,14 +6,15 @@ import {
     KEYBOARD_FAR_SCALE,
     KEY_LABELS,
     WHITE_NOTES,
-    isBlackKey, TRACK_FAR_SCALE,
+    isBlackKey
 } from "../config/pianoConfig";
 
 import {
     getKeyRect,
     getKeyboardHeight,
-    projectKeyboardX,
-    type Point,
+    getTrackTopY,
+    projectTrackX,
+    type Point, projectKeyboardX, getTrackProgressY,
 } from "./pianoGeometry";
 
 export interface PianoRenderState {
@@ -33,52 +34,18 @@ export function renderPiano(
     } = state;
 
     // Nettoyage du canvas avant chaque frame.
-    ctx.clearRect(0, 0, width, height);
+    // ctx.clearRect(0, 0, width, height);
 
     const keyTop =
         height - getKeyboardHeight(height);
 
-    const horizonY = height * 0.11;
-    const horizonX = width / 2;
-
-    const horizonScale = TRACK_FAR_SCALE
-
-    const horizonLeft = projectKeyboardX(
-        0,
-        width,
-        horizonScale,
-    );
-
-    const horizonRight = projectKeyboardX(
-        width,
-        width,
-        horizonScale,
-    );
-
-    const keyboardFarLeft = projectKeyboardX(
-        0,
-        width,
-        KEYBOARD_FAR_SCALE,
-    );
-
-    const keyboardFarRight = projectKeyboardX(
-        width,
-        width,
-        KEYBOARD_FAR_SCALE,
-    );
 
 
     drawTrack(
         ctx,
         width,
-        keyTop,
-        horizonY,
-        horizonX,
-        horizonScale,
-        horizonLeft,
-        horizonRight,
-        keyboardFarLeft,
-        keyboardFarRight,
+        height,
+        keyTop
     );
 
     drawWhiteKeys(
@@ -102,62 +69,110 @@ export function renderPiano(
 function drawTrack(
     ctx: CanvasRenderingContext2D,
     width: number,
+    height: number,
     keyTop: number,
-    horizonY: number,
-    horizonX: number,
-    horizonScale: number,
-    horizonLeft: number,
-    horizonRight: number,
-    keyboardFarLeft: number,
-    keyboardFarRight: number,
 ): void {
-    // Surface principale de la piste.
+    const trackTopY =
+        getTrackTopY(height);
+
+    /*
+     * Limites gauche/droite de la piste
+     * en haut.
+     */
+    const topLeft =
+        projectTrackX(
+            0,
+            0,
+            width,
+        );
+
+    const topRight =
+        projectTrackX(
+            width,
+            0,
+            width,
+        );
+
+    /*
+     * Limites gauche/droite de la piste
+     * au niveau du piano.
+     */
+    const bottomLeft =
+        projectTrackX(
+            0,
+            1,
+            width,
+        );
+
+    const bottomRight =
+        projectTrackX(
+            width,
+            1,
+            width,
+        );
+
+    /*
+     * Fond transparent de la piste.
+     */
+    const trackGradient =
+        ctx.createLinearGradient(
+            0,
+            trackTopY,
+            0,
+            keyTop,
+        );
+
+    trackGradient.addColorStop(
+        0,
+        "rgba(255, 255, 255, 0.16)",
+    );
+
+    trackGradient.addColorStop(
+        1,
+        "rgba(255, 255, 255, 0.06)",
+    );
+
     ctx.beginPath();
 
     ctx.moveTo(
-        horizonLeft,
-        horizonY,
+        topLeft,
+        trackTopY,
     );
 
     ctx.lineTo(
-        horizonRight,
-        horizonY,
+        topRight,
+        trackTopY,
     );
 
     ctx.lineTo(
-        keyboardFarRight,
+        bottomRight,
         keyTop,
     );
 
     ctx.lineTo(
-        keyboardFarLeft,
+        bottomLeft,
         keyTop,
     );
 
     ctx.closePath();
 
-    const horizonWash =
-        ctx.createLinearGradient(
-            0,
-            horizonY,
-            0,
-            keyTop,
-        );
+    ctx.fillStyle =
+        trackGradient;
 
-    horizonWash.addColorStop(
-        0,
-        "rgba(255, 255, 255, 0.30)",
-    );
-
-    horizonWash.addColorStop(
-        1,
-        "rgba(255, 255, 255, 0.13)",
-    );
-
-    ctx.fillStyle = horizonWash;
     ctx.fill();
 
-    // Lignes verticales correspondant aux touches blanches.
+    /*
+     * Lignes verticales des canaux.
+     *
+     * C'EST ICI que va la boucle
+     * dont on parlait.
+     */
+    const whiteWidth =
+        width / WHITE_NOTES.length;
+
+    ctx.strokeStyle =
+        "rgba(255, 255, 255, 0.20)";
+
     ctx.lineWidth = 1;
 
     for (
@@ -166,28 +181,27 @@ function drawTrack(
         boundary += 1
     ) {
         const flatX =
-            (boundary / WHITE_NOTES.length) *
-            width;
+            boundary * whiteWidth;
 
         const topX =
-            projectKeyboardX(
+            projectTrackX(
                 flatX,
+                0,
                 width,
-                horizonScale,
             );
 
         const bottomX =
-            projectKeyboardX(
+            projectTrackX(
                 flatX,
+                1,
                 width,
-                KEYBOARD_FAR_SCALE,
             );
 
         ctx.beginPath();
 
         ctx.moveTo(
             topX,
-            horizonY,
+            trackTopY,
         );
 
         ctx.lineTo(
@@ -195,48 +209,45 @@ function drawTrack(
             keyTop,
         );
 
-        ctx.strokeStyle =
-            "rgba(255, 255, 255, 0.2)";
-
         ctx.stroke();
     }
 
-    // Lignes horizontales donnant l'impression de profondeur.
-    for (const depth of [
+    /*
+     * Lignes horizontales donnant
+     * la sensation de profondeur.
+     */
+    const depthLines = [
         0.2,
         0.38,
         0.59,
         0.82,
-    ]) {
+    ];
+
+    for (const progress of depthLines) {
         const y =
-            horizonY +
-            (keyTop - horizonY) * depth;
+            getTrackProgressY(
+                progress,
+                height,
+            );
 
-        const perspectiveScale =
-            horizonScale +
-            depth *
-            (KEYBOARD_FAR_SCALE -
-                horizonScale);
+        const left =
+            projectTrackX(
+                0,
+                progress,
+                width,
+            );
 
-        const halfWidth =
-            (width * perspectiveScale) / 2;
+        const right =
+            projectTrackX(
+                width,
+                progress,
+                width,
+            );
 
         ctx.beginPath();
 
-        ctx.moveTo(
-            horizonX - halfWidth,
-            y,
-        );
-
-        ctx.lineTo(
-            horizonX + halfWidth,
-            y,
-        );
-
-        ctx.strokeStyle =
-            `rgba(255, 255, 255, ${
-                0.12 + depth * 0.12
-            })`;
+        ctx.moveTo(left, y);
+        ctx.lineTo(right, y);
 
         ctx.stroke();
     }
