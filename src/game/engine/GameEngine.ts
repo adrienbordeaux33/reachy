@@ -24,6 +24,8 @@ export interface GameState {
     hits: number;
 
     misses: number;
+
+    wrongHits: number;
 }
 
 

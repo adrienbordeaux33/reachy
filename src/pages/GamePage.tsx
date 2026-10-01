@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { PauseMenu } from "../components/PauseMenu";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
-import SongPianoHero from "../components/song-piano/SongPianoHero";
+import SongPianoHero, {type SongGameResult} from "../components/song-piano/SongPianoHero";
+import { EndGamePopup } from "../components/EndGamePopup";
 
 type GameState = {
     musicMode?: "upload" | "library";
@@ -23,10 +24,45 @@ function GamePage() {
     const [playMode, setPlayMode] = useState<PlayMode>("play");
     const [tempo, setTempo] = useState(100);
     const [isPaused, setIsPaused] = useState(false);
+    const [restartKey, setRestartKey] = useState(0);
+
+    const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
+
+    const totalAttempts =
+        gameResult === null
+            ? 0
+            : gameResult.hits + gameResult.misses + gameResult.wrongHits;
+
+    const successRate =
+        gameResult === null ||
+        totalAttempts === 0
+            ? 0
+            : Math.round((gameResult.hits / totalAttempts) * 100);
+
+    const handleGameFinished =
+        useCallback(
+            (result: SongGameResult) => {
+                setGameResult(result);
+            },
+            [],
+        );
+
+    const handleRestart = () => {
+        setGameResult(null);
+
+        setRestartKey((value) => value + 1,);
+
+        setIsPaused(false);
+    };
 
     return (
-        <div className="min-h-screen w-full">
-            <SongPianoHero />
+        <div className="min-h-screen w-full pt-30">
+
+            <SongPianoHero
+                isPaused={isPaused}
+                restartKey={restartKey}
+                onFinished={handleGameFinished}
+            />
 
             <MediaPlayer
                 playMode={playMode}
@@ -39,15 +75,23 @@ function GamePage() {
             {isPaused && (
                 <PauseMenu
                     onResume={() => setIsPaused(false)}
-                    onRestart={() => {
-                        console.log("Recommencer");
-                        setIsPaused(false);
-                    }}
+                    onRestart={handleRestart}
                     onChangeInstrument={() => {
                         console.log("Changer instrument");
                     }}
                     onQuit={() => navigate("/")}
                 />
+            )}
+
+            {gameResult !== null && (
+                <div className="fixed inset-0 z-50">
+                    <EndGamePopup
+                        score={gameResult.score}
+                        successRate={successRate}
+                        onRestart={handleRestart}
+                        onQuit={() => navigate("/")}
+                    />
+                </div>
             )}
 
             {/* Informations temporaires pour le développement */}
