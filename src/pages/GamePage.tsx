@@ -25,8 +25,9 @@ function GamePage() {
     const [isPaused, setIsPaused] = useState(false);
 
     return (
-        <div className="min-h-screen w-full">
-            <SongPianoHero />
+        <div className="min-h-screen w-full pt-30">
+
+            <SongPianoHero isPaused={isPaused}/>
 
             <MediaPlayer
                 playMode={playMode}

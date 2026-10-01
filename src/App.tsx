@@ -5,7 +5,6 @@ import GamePage from "./pages/GamePage";
 import FreeGamePage from "./pages/FreeGamePage";
 
 import "./App.css";
-import SongPianoHero from "./components/song-piano/SongPianoHero.tsx";
 
 function App() {
     return (
@@ -15,7 +14,6 @@ function App() {
                 <Route path="/game" element={<GamePage />} />
                 <Route path="/free-game" element={<FreeGamePage />} />
             </Routes>
-        <SongPianoHero />
 
         </main>
     );

@@ -5,7 +5,6 @@ import {
     useState,
 } from "react";
 
-import sceneBackground from "../../assets/fond.png";
 import marioTxt from "../../fixtures/mario.txt?raw";
 
 import PianoCanvas from "../canvas/PianoCanvas";
@@ -38,10 +37,17 @@ const timeline = new GameTimeline(beatmap, {
     postHitTime: 0.15,
 });
 
+interface SongPianoHeroProps{
+    isPaused?: boolean;
+}
+
+const EMPTY_PRESSED_NOTES =
+    new Set<number>();
+
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero() {
+export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
     const playerRef =
         useRef<MusicPlayer | null>(null);
 
@@ -50,6 +56,8 @@ export default function SongPianoHero() {
     const audioContextRef = useRef<AudioContext | null>(null);
 
     const [isPlaying, setIsPlaying] = useState(false);
+
+
     const [pressedNotes, setPressedNotes] = useState<Set<number>>(() => new Set());
 
     const [gameState, setGameState] =
@@ -191,20 +199,23 @@ export default function SongPianoHero() {
         const detachKeyboard =
             attachKeyboardInput({
                 onPress: (midi) => {
+                    if (isPaused) {
+                        return;
+                    }
 
                     setPressedNotes((previous) => {
                         const next = new Set(previous);
+
                         next.add(midi);
 
                         return next;
                     });
 
-                    const currentTime = getSongTime()
-
                     engine.notePressed(
                         midi,
-                        currentTime,
+                        getSongTime(),
                     );
+
                     syncGameState();
                 },
 
@@ -212,21 +223,26 @@ export default function SongPianoHero() {
 
                     setPressedNotes((previous) => {
                         const next = new Set(previous);
+
                         next.delete(midi);
+
                         return next;
                     });
 
-                    const currentTime = getSongTime()
+                    if (isPaused) {
+                        return;
+                    }
+
 
                     engine.noteReleased(
                         midi,
-                        currentTime,
+                        getSongTime(),
                     );
                 },
             });
 
         return detachKeyboard;
-    }, [getSongTime, syncGameState]);
+    }, [isPaused, getSongTime, syncGameState]);
 
     useEffect(() => {
         let frameId = 0;
@@ -257,123 +273,70 @@ export default function SongPianoHero() {
         syncGameState,
     ]);
 
+    useEffect(() => {
+        const audioContext =
+            audioContextRef.current;
+
+        if (
+            audioContext === null ||
+            !isPlaying
+        ) {
+            return;
+        }
+
+        if (isPaused) {
+            clockRef.current.pause();
+            engine.pause();
+
+            void audioContext.suspend();
+
+            return;
+        }
+
+        void audioContext.resume().then(() => {
+            clockRef.current.resume();
+            engine.resume();
+        });
+    }, [isPaused, isPlaying]);
+
+
     return (
-        <main
-            className="
-        relative
-        min-h-screen
-        overflow-hidden
-        bg-cover
-        bg-center
-        bg-no-repeat
-      "
-            style={{
-                backgroundImage:
-                    `url(${sceneBackground})`,
-            }}
-        >
-            <div
-                className="
-          relative
-          z-10
-          mx-auto
-          flex
-          min-h-screen
-          w-full
-          max-w-[1400px]
-          flex-col
-          px-6
-          py-6
-        "
-            >
+            <div className=" relative z-10 mx-auto flex min-h-1/2 w-full max-w-[1400px] flex-col px-6 py-6">
                 {/* UI temporaire */}
-                <header
-                    className="
-    mb-4
-    flex
-    items-center
-    justify-between
-    gap-6
-  "
-                >
+                <header className=" mb-4 flex items-center justify-between gap-6 ">
                     <div>
-                        <div
-                            className="
-        text-sm
-        uppercase
-        tracking-wider
-        text-white/60
-      "
-                        >
+                        <div className=" text-sm uppercase tracking-widertext-white/60 ">
                             Morceau
                         </div>
 
-                        <div
-                            className="
-        text-xl
-        font-semibold
-        text-white
-      "
-                        >
+                        <div className=" text-xl font-semiboldtext-white ">
                             {song.title ?? "Mario"}
                         </div>
                     </div>
 
-                    <div
-                        className="
-      flex
-      items-center
-      gap-8
-      text-white
-    "
-                    >
+                    <div className=" flex items-center gap-8 text-white">
                         <div className="text-center">
-                            <div
-                                className="
-          text-xs
-          uppercase
-          tracking-wider
-          text-white/50
-        "
-                            >
+                            <div  className=" text-xs uppercase tracking-widertext-white/50 ">
                                 Score
                             </div>
 
-                            <div
-                                className="
-          text-2xl
-          font-bold
-        "
-                            >
+                            <div className=" text-2xl font-bold ">
                                 {gameState.score}
                             </div>
                         </div>
 
                         <div className="text-center">
-                            <div
-                                className="
-          text-xs
-          uppercase
-          tracking-wider
-          text-white/50
-        "
-                            >
+                            <div className=" text-xs uppercase tracking-widertext-white/50 ">
                                 Combo
                             </div>
 
-                            <div
-                                className="
-          text-2xl
-          font-bold
-        "
-                            >
+                            <div className=" text-2xl font-bold  ">
                                 x{gameState.combo}
                             </div>
                         </div>
 
                         <div className="text-center">
-                            <div
-                                className=" text-xs uppercase tracking-widertext-white/50">
+                            <div className=" text-xs uppercase tracking-widertext-white/50">
                                 Hits
                             </div>
 
@@ -404,21 +367,15 @@ export default function SongPianoHero() {
                 </header>
 
                 {/* Surface de jeu */}
-                <div
-                    className="
-            mx-auto
-            aspect-video
-            w-full
-            max-w-[1000px]
-            overflow-hidden
-          "
-                >
+                <div className=" mx-auto aspect-video w-full max-w-[1000px] overflow-hidden ">
                     <PianoCanvas
-                        pressedNotes={pressedNotes}
+                        pressedNotes={
+                        isPaused
+                            ? EMPTY_PRESSED_NOTES
+                            : pressedNotes}
                         getVisibleNotes={getVisibleNotes}
                     />
                 </div>
             </div>
-        </main>
     );
 }
