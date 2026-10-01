@@ -8,11 +8,11 @@ interface EndGamePopupProps {
 }
 
 export function EndGamePopup({
-                                 score = 236,
-                                 successRate = 85,
-                                 onRestart = () => {},
-                                 onQuit = () => {},
-                             }: EndGamePopupProps) {
+    score = 236,
+    successRate = 85,
+    onRestart = () => {},
+    onQuit = () => {},
+}: EndGamePopupProps) {
     return (
         <main className="relative isolate min-h-screen overflow-hidden text-white">
             {/* Background */}
@@ -69,23 +69,23 @@ export function EndGamePopup({
                         {/* Stats */}
                         <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center justify-center gap-5 text-center sm:flex-row sm:gap-8">
                             <div className="flex items-baseline gap-3">
-                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                  Score :
-                </span>
+                                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
+                                    Score :
+                                </span>
                                 <span className="text-3xl font-black text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.45)] sm:text-4xl">
-                  {score}
-                </span>
+                                    {score}
+                                </span>
                             </div>
 
                             <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent sm:block" />
 
                             <div className="flex items-baseline gap-3">
-                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                  Réussite :
-                </span>
+                                <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
+                                    Réussite :
+                                </span>
                                 <span className="text-3xl font-black text-fuchsia-300 drop-shadow-[0_0_12px_rgba(217,70,239,.45)] sm:text-4xl">
-                  {successRate} %
-                </span>
+                                    {successRate} %
+                                </span>
                             </div>
                         </div>
 
@@ -97,13 +97,23 @@ export function EndGamePopup({
                                 className="group relative flex min-h-24 items-center justify-center gap-4 overflow-hidden rounded-3xl border border-cyan-400/80 bg-slate-950/45 px-7 py-5 shadow-[0_0_28px_rgba(34,211,238,.28)] backdrop-blur-xl transition duration-150 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
                             >
                                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-cyan-300/40 bg-cyan-400/10 text-cyan-100">
-                                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        className="h-6 w-6"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                    >
                                         <path d="M3 12a9 9 0 1 0 3-6.7" />
                                         <path d="M3 4v6h6" />
                                     </svg>
                                 </div>
-                                <span className="text-lg font-bold sm:text-xl">Recommencer</span>
-                                <span className="ml-1 text-cyan-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">→</span>
+                                <span className="text-lg font-bold sm:text-xl">
+                                    Recommencer
+                                </span>
+                                <span className="ml-1 text-cyan-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">
+                                    →
+                                </span>
                             </button>
 
                             <button
@@ -112,14 +122,24 @@ export function EndGamePopup({
                                 className="group relative flex min-h-24 items-center justify-center gap-4 overflow-hidden rounded-3xl border border-rose-400/80 bg-rose-950/35 px-7 py-5 shadow-[0_0_28px_rgba(244,63,94,.34)] backdrop-blur-xl transition duration-150 hover:-translate-y-0.5 hover:brightness-110 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
                             >
                                 <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-rose-300/40 bg-rose-400/10 text-rose-100">
-                                    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <svg
+                                        viewBox="0 0 24 24"
+                                        className="h-6 w-6"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                    >
                                         <path d="M10 17l5-5-5-5" />
                                         <path d="M15 12H3" />
                                         <path d="M21 19V5a2 2 0 0 0-2-2h-6" />
                                     </svg>
                                 </div>
-                                <span className="text-lg font-bold sm:text-xl">Quitter</span>
-                                <span className="ml-1 text-rose-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">→</span>
+                                <span className="text-lg font-bold sm:text-xl">
+                                    Quitter
+                                </span>
+                                <span className="ml-1 text-rose-300 opacity-0 transition group-hover:translate-x-1 group-hover:opacity-100">
+                                    →
+                                </span>
                             </button>
                         </div>
                     </div>
