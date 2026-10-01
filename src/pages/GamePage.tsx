@@ -5,11 +5,12 @@ import { PauseMenu } from "../components/PauseMenu";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
 import SongPianoHero, {type SongGameResult} from "../components/song-piano/SongPianoHero";
 import { EndGamePopup } from "../components/EndGamePopup";
+import {getSongDefinition, type SongId,} from "../music/library/SongLibrary";
 
 type GameState = {
     musicMode?: "upload" | "library";
     instrument?: "piano" | "guitar" | "bass";
-    songId?: "mario" | "pirate";
+    songId?: SongId;
 };
 
 type PlayMode = "listen" | "play";
@@ -20,6 +21,8 @@ function GamePage() {
 
     const { musicMode, instrument, songId } =
         (location.state as GameState) ?? {};
+    const selectedSong = getSongDefinition(songId ?? "mario");
+
     // États qui seront partagés avec le futur PianoHero
     const [playMode, setPlayMode] = useState<PlayMode>("play");
     const [tempo, setTempo] = useState(100);
@@ -59,9 +62,12 @@ function GamePage() {
         <div className="min-h-screen w-full pt-30">
 
             <SongPianoHero
+                key={selectedSong.id}
+                songSource={selectedSong.source}
                 isPaused={isPaused}
                 restartKey={restartKey}
                 onFinished={handleGameFinished}
+
             />
 
             <MediaPlayer

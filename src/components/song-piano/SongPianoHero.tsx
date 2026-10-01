@@ -3,9 +3,8 @@ import {
     useEffect,
     useRef,
     useState,
+    useMemo
 } from "react";
-
-import marioTxt from "../../fixtures/mario.txt?raw";
 
 import PianoCanvas from "../canvas/PianoCanvas";
 
@@ -17,25 +16,6 @@ import {GameClock} from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
 
-//
-// Chargement du morceau.
-//
-// Important : on fait ça hors du composant pour ne pas
-// parser/regénérer la Beatmap à chaque render React.
-//
-const parser = new TxtMusicParser();
-const beatmapGenerator = new BeatmapGenerator();
-
-const song = parser.parse(marioTxt);
-const beatmap = beatmapGenerator.generate(song);
-
-const engine = new DefaultGameEngine();
-engine.load(beatmap);
-
-const timeline = new GameTimeline(beatmap, {
-    travelTime: NOTE_TRAVEL_TIME,
-    postHitTime: 0.15,
-});
 
 export interface SongGameResult {
     score: number;
@@ -45,6 +25,7 @@ export interface SongGameResult {
 }
 
 interface SongPianoHeroProps{
+    songSource: string;
     isPaused?: boolean;
     restartKey?: number;
     onFinished: (result: SongGameResult) => void;
@@ -54,7 +35,41 @@ const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({isPaused, restartKey, onFinished} : SongPianoHeroProps) {
+export default function SongPianoHero({songSource, isPaused, restartKey, onFinished} : SongPianoHeroProps) {
+
+    const {
+        song,
+        engine,
+        timeline,
+    } = useMemo(() => {
+        const parser = new TxtMusicParser();
+
+        const beatmapGenerator = new BeatmapGenerator();
+
+        const song =
+            parser.parse(songSource);
+
+        const beatmap =
+            beatmapGenerator.generate(song);
+
+        const engine = new DefaultGameEngine();
+
+        engine.load(beatmap);
+
+        const timeline = new GameTimeline(beatmap, {
+                travelTime:
+                NOTE_TRAVEL_TIME,
+                postHitTime: 0.15,
+            });
+
+        return {
+            song,
+            engine,
+            timeline,
+        };
+    }, [songSource]);
+
+
     const playerRef =
         useRef<MusicPlayer | null>(null);
 
@@ -105,7 +120,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
                         "hit"
                     );
                 });
-        }, [getSongTime]);
+        }, [engine, getSongTime, timeline]);
 
     const syncGameState = useCallback(() => {
         const next =
@@ -133,7 +148,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
             snapshot;
 
         setGameState(snapshot);
-    }, []);
+    }, [engine]);
 
     /**
      * Lance/recommence le morceau.
@@ -189,7 +204,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
 
             setPressedNotes(new Set());
             setIsPlaying(true);
-        }, [syncGameState]);
+        }, [engine, song, syncGameState]);
 
     useEffect(() => {
         const clock = clockRef.current;
@@ -209,7 +224,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
                 audioContextRef.current = null;
             }
         };
-    }, []);
+    }, [engine]);
 
     useEffect(() => {
         const detachKeyboard =
@@ -258,7 +273,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
             });
 
         return detachKeyboard;
-    }, [isPaused, getSongTime, syncGameState]);
+    }, [isPaused, getSongTime, syncGameState, engine]);
 
     useEffect(() => {
         let frameId = 0;
@@ -305,7 +320,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
         return () => {
             cancelAnimationFrame(frameId);
         };
-    }, [getSongTime, syncGameState, onFinished]);
+    }, [getSongTime, syncGameState, onFinished, engine]);
     useEffect(() => {
         const audioContext =
             audioContextRef.current;
@@ -330,7 +345,7 @@ export default function SongPianoHero({isPaused, restartKey, onFinished} : SongP
             clockRef.current.resume();
             engine.resume();
         });
-    }, [isPaused, isPlaying]);
+    }, [engine, isPaused, isPlaying]);
 
     useEffect(() => {
         if (
