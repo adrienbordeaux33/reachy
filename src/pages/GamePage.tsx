@@ -1,79 +1,118 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { PauseMenu } from "../components/PauseMenu";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
-import SongPianoHero from "../components/song-piano/SongPianoHero";
+import SongPianoHero, {
+  type SongGameResult,
+} from "../components/song-piano/SongPianoHero";
+import { EndGamePopup } from "../components/EndGamePopup";
 
 type GameState = {
-    musicMode?: "upload" | "library";
-    instrument?: "piano" | "guitar" | "bass";
-    songId?: "mario" | "pirate";
+  musicMode?: "upload" | "library";
+  instrument?: "piano" | "guitar" | "bass";
+  songId?: "mario" | "pirate";
 };
 
 type PlayMode = "listen" | "play";
 
 function GamePage() {
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    const { musicMode, instrument, songId } =
-        (location.state as GameState) ?? {};
-    // États qui seront partagés avec le futur PianoHero
-    const [playMode, setPlayMode] = useState<PlayMode>("play");
-    const [tempo, setTempo] = useState(100);
-    const [isPaused, setIsPaused] = useState(false);
+  const { musicMode, instrument, songId } = (location.state as GameState) ?? {};
+  // États qui seront partagés avec le futur PianoHero
+  const [playMode, setPlayMode] = useState<PlayMode>("play");
+  const [tempo, setTempo] = useState(100);
+  const [isPaused, setIsPaused] = useState(false);
+  const [restartKey, setRestartKey] = useState(0);
 
-    useEffect(() => {
-        const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.code === "Space" && !isPaused) {
-                event.preventDefault();
-                setIsPaused(true);
-            }
-        };
+  const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
 
-        window.addEventListener("keydown", handleKeyDown);
+  const totalAttempts =
+    gameResult === null
+      ? 0
+      : gameResult.hits + gameResult.misses + gameResult.wrongHits;
 
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
-    }, [isPaused]);
+  const successRate =
+    gameResult === null || totalAttempts === 0
+      ? 0
+      : Math.round((gameResult.hits / totalAttempts) * 100);
 
-    return (
-        <div className="min-h-screen w-full">
-            <SongPianoHero />
+  const handleGameFinished = useCallback((result: SongGameResult) => {
+    setGameResult(result);
+  }, []);
 
-            <MediaPlayer
-                playMode={playMode}
-                tempo={tempo}
-                onPlayModeChange={setPlayMode}
-                onTempoChange={setTempo}
-                onPause={() => setIsPaused(true)}
-            />
+  const handleRestart = () => {
+    setGameResult(null);
 
-            {isPaused && (
-                <PauseMenu
-                    onResume={() => setIsPaused(false)}
-                    onRestart={() => {
-                        console.log("Recommencer");
-                        setIsPaused(false);
-                    }}
-                    onChangeInstrument={() => {
-                        console.log("Changer instrument");
-                    }}
-                    onQuit={() => navigate("/")}
-                />
-            )}
+    setRestartKey((value) => value + 1);
 
-            {/* Informations temporaires pour le développement */}
-            <div className="mt-4 text-center text-sm text-white/50">
-                <p>Source : {musicMode}</p>
-                <p>Instrument : {instrument}</p>
-                <p>Pause : {isPaused ? "oui" : "non"}</p>
-                <p>Morceau : {songId ?? "aucun"}</p>
-            </div>
+    setIsPaused(false);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === "Space" && !isPaused) {
+        event.preventDefault();
+        setIsPaused(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPaused]);
+
+  return (
+    <div className="min-h-screen w-full pt-30">
+      <SongPianoHero
+        isPaused={isPaused}
+        restartKey={restartKey}
+        onFinished={handleGameFinished}
+      />
+
+      <MediaPlayer
+        playMode={playMode}
+        tempo={tempo}
+        onPlayModeChange={setPlayMode}
+        onTempoChange={setTempo}
+        onPause={() => setIsPaused(true)}
+      />
+
+      {isPaused && (
+        <PauseMenu
+          onResume={() => setIsPaused(false)}
+          onRestart={handleRestart}
+          onChangeInstrument={() => {
+            console.log("Changer instrument");
+          }}
+          onQuit={() => navigate("/")}
+        />
+      )}
+
+      {gameResult !== null && (
+        <div className="fixed inset-0 z-50">
+          <EndGamePopup
+            score={gameResult.score}
+            successRate={successRate}
+            onRestart={handleRestart}
+            onQuit={() => navigate("/")}
+          />
         </div>
-    );
+      )}
+
+      {/* Informations temporaires pour le développement */}
+      <div className="mt-4 text-center text-sm text-white/50">
+        <p>Source : {musicMode}</p>
+        <p>Instrument : {instrument}</p>
+        <p>Pause : {isPaused ? "oui" : "non"}</p>
+        <p>Morceau : {songId ?? "aucun"}</p>
+      </div>
+    </div>
+  );
 }
 
 export default GamePage;
