@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import concertBackground from "../assets/fond_reachy.png";
+import concertBackground from "../assets/fond.png";
 import { NeonDecoration } from "./NeonDecoration";
 
 interface FreeModePauseMenuProps {
