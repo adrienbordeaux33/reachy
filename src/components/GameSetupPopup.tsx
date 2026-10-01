@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SelectionButton } from "./SelectionButton.tsx";
 import { NeonDecoration } from "./NeonDecoration";
 import {
@@ -27,6 +27,34 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     const [songId, setSongId] = useState<SongId>("mario");
 
     const [instrument, setInstrument] = useState<Instrument>("piano");
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [onClose]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key === "Escape") {
+                onClose();
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [onClose]);
 
     return (
         <div className="fixed inset-0 z-50 overflow-auto bg-black/60 text-white backdrop-blur-sm">
@@ -61,20 +89,6 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     md:px-14
     "
                     >
-                        {/* Bouton fermer */}
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="
-      absolute right-6 top-5 z-10
-      text-3xl font-light text-white/60
-      transition
-      hover:text-white
-    "
-                            aria-label="Fermer"
-                        >
-                            ×
-                        </button>
                         {/* Bordure colorée */}
                         <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] border-2 border-transparent [mask-composite:exclude]" />
 
@@ -234,6 +248,17 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                 {/* Reflet */}
                                 <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
                             </button>
+                        </div>
+
+                        {/* Raccourci Escape */}
+                        <div className="mt-8 flex items-center justify-center gap-4 pt-6">
+                            <kbd className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/50">
+                                ESC
+                            </kbd>
+
+                            <span className="text-sm text-white/50">
+                                pour fermer
+                            </span>
                         </div>
 
                         {/* Décoration interne */}
