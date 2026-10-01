@@ -7,16 +7,16 @@
 import "./App.css";
 import SongPianoHero from "./components/song-piano/SongPianoHero.tsx";
 
-
 function App() {
     return (
         <main className="app">
-            {/*<Routes>*/}
-            {/*    <Route path="/" element={<HomePage />} />*/}
-            {/*    <Route path="/game" element={<GamePage />} />*/}
-            {/*    <Route path="/free-game" element={<FreeGamePage />} />*/}
-            {/*</Routes>*/}
-            <SongPianoHero />
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/game" element={<GamePage />} />
+                <Route path="/free-game" element={<FreeGamePage />} />
+            </Routes>
+        <SongPianoHero />
+
         </main>
     );
 }

@@ -10,6 +10,8 @@ interface FreeModePauseMenuProps {
   onRestart?: () => void;
   onListen?: () => void;
   onSave?: () => void;
+  saveStatus?: string;
+  isSaveDisabled?: boolean;
   onQuit?: () => void;
 }
 
@@ -21,6 +23,8 @@ export function FreeModePauseMenu({
   onRestart = () => {},
   onListen = () => {},
   onSave = () => {},
+  saveStatus = "",
+  isSaveDisabled = false,
   onQuit = () => {},
 }: FreeModePauseMenuProps) {
   if (!isOpen) return null;
@@ -159,6 +163,7 @@ export function FreeModePauseMenu({
                 variant="green"
                 icon={<SaveIcon />}
                 onClick={onSave}
+                disabled={isSaveDisabled}
               >
                 Enregistrer
               </ActionButton>
@@ -168,6 +173,16 @@ export function FreeModePauseMenu({
                 Quitter
               </ActionButton>
             </div>
+
+            {saveStatus && (
+              <p
+                className="mt-5 text-center text-sm text-cyan-100"
+                role="status"
+                aria-live="polite"
+              >
+                {saveStatus}
+              </p>
+            )}
 
             {/* Décoration intérieure */}
             <div className="pointer-events-none absolute bottom-8 right-10 hidden rotate-[-32deg] gap-2 lg:flex">
@@ -193,9 +208,16 @@ interface ActionButtonProps {
   icon: ReactNode;
   variant: ButtonVariant;
   onClick?: () => void;
+  disabled?: boolean;
 }
 
-function ActionButton({ children, icon, variant, onClick }: ActionButtonProps) {
+function ActionButton({
+  children,
+  icon,
+  variant,
+  onClick,
+  disabled = false,
+}: ActionButtonProps) {
   const variants: Record<ButtonVariant, string> = {
     cyan: `
       border-cyan-400/90
@@ -242,6 +264,7 @@ function ActionButton({ children, icon, variant, onClick }: ActionButtonProps) {
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       className={`
         group
         flex min-h-24
@@ -264,6 +287,8 @@ function ActionButton({ children, icon, variant, onClick }: ActionButtonProps) {
         focus:outline-none
         focus-visible:ring-2
         focus-visible:ring-white
+        disabled:cursor-not-allowed
+        disabled:opacity-50
 
         ${variants[variant]}
       `}

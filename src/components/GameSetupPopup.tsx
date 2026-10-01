@@ -7,19 +7,24 @@ import {
     MusicIcon,
     PlayIcon,
     SlidersIcon,
-    ShuffleIcon,
 } from "./icons.tsx";
 
-type MusicMode = "upload" | "random" | "free";
-type Instrument = "piano" | "guitar" | "bass";
+type MusicMode = "upload" | "library" | "free";
 
+type SongId = "mario" | "pirate";
+type Instrument = "piano" | "guitar" | "bass";
 interface GameSetupPopupProps {
-    onStart: (musicMode: MusicMode, instrument: Instrument) => void;
+    onStart: (
+        musicMode: MusicMode,
+        instrument: Instrument,
+        songId?: SongId,
+    ) => void;
     onClose: () => void;
 }
 
 export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     const [musicMode, setMusicMode] = useState<MusicMode>("upload");
+    const [songId, setSongId] = useState<SongId>("mario");
 
     const [instrument, setInstrument] = useState<Instrument>("piano");
 
@@ -98,17 +103,43 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                 ma musique
                             </SelectionButton>
 
-                            <SelectionButton
-                                active={musicMode === "random"}
-                                variant="purple"
-                                icon={<ShuffleIcon />}
-                                onClick={() => setMusicMode("random")}
-                            >
-                                Musique
-                                <br />
-                                aléatoire
-                            </SelectionButton>
+                            <div className="flex flex-col gap-3">
+                                <SelectionButton
+                                    active={musicMode === "library"}
+                                    variant="purple"
+                                    icon={<MusicIcon />}
+                                    onClick={() => setMusicMode("library")}
+                                >
+                                    Choisir
+                                    <br />
+                                    un morceau
+                                </SelectionButton>
 
+                                {musicMode === "library" && (
+                                    <select
+                                        value={songId}
+                                        onChange={(event) =>
+                                            setSongId(
+                                                event.target.value as SongId,
+                                            )
+                                        }
+                                        className="
+                w-full rounded-xl
+                border border-purple-400/40
+                bg-slate-950/80
+                px-4 py-3
+                text-white
+                outline-none
+                focus:border-purple-300
+            "
+                                    >
+                                        <option value="mario">Mario</option>
+                                        <option value="pirate">
+                                            Pirates des Caraïbes
+                                        </option>
+                                    </select>
+                                )}
+                            </div>
                             <SelectionButton
                                 active={musicMode === "free"}
                                 variant="pink"
@@ -164,7 +195,15 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                         <div className="mt-10 flex justify-center">
                             <button
                                 type="button"
-                                onClick={() => onStart(musicMode, instrument)}
+                                onClick={() =>
+                                    onStart(
+                                        musicMode,
+                                        instrument,
+                                        musicMode === "library"
+                                            ? songId
+                                            : undefined,
+                                    )
+                                }
                                 className="
     group relative
     flex min-h-24 w-full max-w-xl

@@ -1,4 +1,8 @@
 import { useEffect, useRef, type PointerEvent } from "react";
+import SoundfontPlayer, {
+  type Player,
+  type PlayerVoice,
+} from "soundfont-player";
 import sceneBackground from "../assets/fond.png";
 import { PauseIcon } from "./icons.tsx";
 
@@ -7,12 +11,39 @@ interface TrailNote {
   startedAt: number;
 }
 
+interface RecordedNote {
+  midi: number;
+  startedAt: number;
+  endedAt?: number;
+}
+
 const FIRST = 60;
 const LAST = 72;
 const TRAIL_DURATION = 1.4;
 const LETTER_TRAIL_STEPS = 5;
 const LETTER_TRAIL_SPACING = 0.055;
 const KEYBOARD_FAR_SCALE = 0.82;
+const SOUNDFONT_NOTES = [
+  "C4",
+  "Db4",
+  "D4",
+  "Eb4",
+  "E4",
+  "F4",
+  "Gb4",
+  "G4",
+  "Ab4",
+  "A4",
+  "Bb4",
+  "B4",
+  "C5",
+];
+type Instrument = "piano" | "guitar" | "bass";
+const SOUNDFONT_NAMES: Record<Instrument, string> = {
+  piano: "acoustic_grand_piano",
+  guitar: "acoustic_guitar_nylon",
+  bass: "electric_bass_finger",
+};
 const WHITE_NOTES = [60, 62, 64, 65, 67, 69, 71, 72];
 const BLACK_PITCHES = new Set([1, 3, 6, 8, 10]);
 const isBlack = (midi: number) => BLACK_PITCHES.has(midi % 12);
@@ -23,7 +54,11 @@ interface Point {
 }
 
 interface PianoHeroProps {
+  instrument: Instrument;
   isPaused: boolean;
+  shouldSaveRecording: boolean;
+  onRecordingReady: (recording: Blob) => void;
+  onRecordingError: (message: string) => void;
   onPause: () => void;
   onResume: () => void;
 }
@@ -76,6 +111,72 @@ function keyRect(midi: number, width: number) {
 function projectKeyboardX(x: number, width: number, scale: number) {
   const vanishingX = width / 2;
   return vanishingX + (x - vanishingX) * scale;
+}
+
+function createMidiRecording(notes: RecordedNote[]) {
+  if (notes.length === 0) return new Blob();
+
+  const startedAt = Math.min(...notes.map((note) => note.startedAt));
+  const events = notes.flatMap((note) => [
+    {
+      time: note.startedAt - startedAt,
+      status: 0x90,
+      midi: note.midi,
+      velocity: 100,
+    },
+    {
+      time: (note.endedAt ?? performance.now()) - startedAt,
+      status: 0x80,
+      midi: note.midi,
+      velocity: 0,
+    },
+  ]);
+  events.sort(
+    (first, second) => first.time - second.time || first.status - second.status,
+  );
+
+  const track = [0x00, 0xff, 0x51, 0x03, 0x07, 0xa1, 0x20];
+  let previousTick = 0;
+  for (const event of events) {
+    const tick = Math.round((event.time * 480) / 500);
+    let delta = tick - previousTick;
+    previousTick = tick;
+    const encodedDelta = [delta & 0x7f];
+    while ((delta >>= 7) > 0) {
+      encodedDelta.unshift((delta & 0x7f) | 0x80);
+    }
+    track.push(...encodedDelta, event.status, event.midi, event.velocity);
+  }
+  track.push(0x00, 0xff, 0x2f, 0x00);
+
+  const trackLength = track.length;
+  const header = [
+    0x4d,
+    0x54,
+    0x68,
+    0x64,
+    0x00,
+    0x00,
+    0x00,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x01,
+    0xe0,
+    0x4d,
+    0x54,
+    0x72,
+    0x6b,
+    (trackLength >>> 24) & 0xff,
+    (trackLength >>> 16) & 0xff,
+    (trackLength >>> 8) & 0xff,
+    trackLength & 0xff,
+  ];
+  return new Blob([new Uint8Array([...header, ...track])], {
+    type: "audio/midi",
+  });
 }
 
 function traceRoundedPolygon(
@@ -157,17 +258,120 @@ function drawKeyLabel(
 }
 
 export default function PianoHero({
+  instrument,
   isPaused,
+  shouldSaveRecording,
+  onRecordingReady,
+  onRecordingError,
   onPause,
   onResume,
 }: PianoHeroProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const audioOutputRef = useRef<GainNode | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const recordingChunksRef = useRef<Blob[]>([]);
+  const recordedNotesRef = useRef<RecordedNote[]>([]);
+  const activeRecordedNotesRef = useRef(new Map<number, RecordedNote>());
+  const exportRecordingRef = useRef(false);
+  const onRecordingReadyRef = useRef(onRecordingReady);
+  const onRecordingErrorRef = useRef(onRecordingError);
+  const soundfontRef = useRef<Player | null>(null);
+  const soundfontLoadRef = useRef<Promise<Player> | null>(null);
+  const audioGenerationRef = useRef(0);
+  const activeVoicesRef = useRef(new Map<number, PlayerVoice>());
   const pressedRef = useRef(new Set<number>());
   const trailNotesRef = useRef<TrailNote[]>([]);
   const pointerNoteRef = useRef<number | null>(null);
   const pausedRef = useRef(false);
-  pausedRef.current = isPaused;
+
+  useEffect(() => {
+    onRecordingReadyRef.current = onRecordingReady;
+    onRecordingErrorRef.current = onRecordingError;
+  }, [onRecordingError, onRecordingReady]);
+
+  useEffect(() => {
+    audioGenerationRef.current += 1;
+    const AudioContextConstructor = window.AudioContext;
+    if (!AudioContextConstructor) return;
+
+    const audioContext =
+      audioContextRef.current ?? new AudioContextConstructor();
+    audioContextRef.current = audioContext;
+    if (!audioOutputRef.current) {
+      const recordingDestination = audioContext.createMediaStreamDestination();
+      const audioOutput = audioContext.createGain();
+      audioOutput.connect(audioContext.destination);
+      audioOutput.connect(recordingDestination);
+      audioOutputRef.current = audioOutput;
+
+      if (typeof MediaRecorder !== "undefined") {
+        const mimeType = ["audio/webm;codecs=opus", "audio/mp4"].find((type) =>
+          MediaRecorder.isTypeSupported(type),
+        );
+        const recorder = new MediaRecorder(
+          recordingDestination.stream,
+          mimeType ? { mimeType } : undefined,
+        );
+        recordingChunksRef.current = [];
+        recorder.ondataavailable = (event) => {
+          if (event.data.size > 0) recordingChunksRef.current.push(event.data);
+        };
+        recorder.onstop = () => {
+          if (!exportRecordingRef.current) return;
+          const recording = new Blob(recordingChunksRef.current, {
+            type: recorder.mimeType || "audio/webm",
+          });
+          if (recording.size > 0) onRecordingReadyRef.current(recording);
+          else onRecordingErrorRef.current("Aucun son n'a été enregistré.");
+        };
+        recorder.onerror = () => {
+          onRecordingErrorRef.current("L'enregistrement audio a échoué.");
+        };
+        recorder.start();
+        recorderRef.current = recorder;
+      }
+    }
+
+    let cancelled = false;
+    soundfontRef.current = null;
+
+    const loadPromise = SoundfontPlayer.instrument(
+      audioContext,
+      SOUNDFONT_NAMES[instrument],
+      {
+        soundfont: "FluidR3_GM",
+        format: "mp3",
+        notes: SOUNDFONT_NOTES,
+        gain: 0.45,
+        destination: audioOutputRef.current ?? audioContext.destination,
+      },
+    );
+    soundfontLoadRef.current = loadPromise;
+
+    void loadPromise
+      .then((player) => {
+        if (!cancelled) soundfontRef.current = player;
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) {
+          console.warn(
+            "Impossible de charger la banque de sons; synthèse de secours activée.",
+            error,
+          );
+        }
+      })
+      .finally(() => {
+        if (soundfontLoadRef.current === loadPromise) {
+          soundfontLoadRef.current = null;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      soundfontRef.current = null;
+    };
+  }, [instrument]);
 
   const playSound = (midi: number) => {
     const AudioContextConstructor = window.AudioContext;
@@ -179,6 +383,12 @@ export default function PianoHero({
     if (audioContext.state === "suspended") void audioContext.resume();
 
     const now = audioContext.currentTime;
+    const voice = soundfontRef.current?.play(midi, now, { gain: 0.9 });
+    if (voice) {
+      activeVoicesRef.current.set(midi, voice);
+      return;
+    }
+
     const frequency = 440 * 2 ** ((midi - 69) / 12);
     const partials = [
       { multiplier: 1, volume: 0.2, type: "triangle" as OscillatorType },
@@ -194,7 +404,7 @@ export default function PianoHero({
       gain.gain.exponentialRampToValueAtTime(partial.volume, now + 0.012);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.25);
       oscillator.connect(gain);
-      gain.connect(audioContext.destination);
+      gain.connect(audioOutputRef.current ?? audioContext.destination);
       oscillator.start(now);
       oscillator.stop(now + 1.3);
     }
@@ -211,12 +421,22 @@ export default function PianoHero({
     }
 
     pressedRef.current.add(midi);
+    const recordedNote = { midi, startedAt: performance.now() };
+    recordedNotesRef.current.push(recordedNote);
+    activeRecordedNotesRef.current.set(midi, recordedNote);
     trailNotesRef.current.push({ midi, startedAt: performance.now() });
     playSound(midi);
   };
 
   const releaseNote = (midi: number) => {
     pressedRef.current.delete(midi);
+    const recordedNote = activeRecordedNotesRef.current.get(midi);
+    if (recordedNote) {
+      recordedNote.endedAt = performance.now();
+      activeRecordedNotesRef.current.delete(midi);
+    }
+    activeVoicesRef.current.get(midi)?.stop();
+    activeVoicesRef.current.delete(midi);
   };
 
   const handlePointerDown = (event: PointerEvent<HTMLCanvasElement>) => {
@@ -270,15 +490,43 @@ export default function PianoHero({
   };
 
   useEffect(() => {
+    pausedRef.current = isPaused;
     if (isPaused) {
-      pressedRef.current.clear();
+      [...pressedRef.current].forEach(releaseNote);
       trailNotesRef.current = [];
       pointerNoteRef.current = null;
       void audioContextRef.current?.suspend();
+      if (recorderRef.current?.state === "recording") {
+        recorderRef.current.pause();
+      }
     } else {
       void audioContextRef.current?.resume();
+      if (recorderRef.current?.state === "paused") {
+        recorderRef.current.resume();
+      }
     }
   }, [isPaused]);
+
+  useEffect(() => {
+    if (!shouldSaveRecording) return;
+
+    if (recordedNotesRef.current.length === 0) {
+      onRecordingErrorRef.current("Aucune note à enregistrer.");
+      return;
+    }
+
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state === "inactive") {
+      const midiRecording = createMidiRecording(recordedNotesRef.current);
+      if (midiRecording.size > 0) {
+        onRecordingReadyRef.current(midiRecording);
+      }
+      return;
+    }
+
+    exportRecordingRef.current = true;
+    recorder.stop();
+  }, [shouldSaveRecording]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -630,8 +878,27 @@ export default function PianoHero({
       resizeObserver.disconnect();
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
-      void audioContextRef.current?.close();
-      audioContextRef.current = null;
+      const audioContext = audioContextRef.current;
+      const cleanupGeneration = audioGenerationRef.current;
+      const recorder = recorderRef.current;
+      exportRecordingRef.current = false;
+      if (recorder && recorder.state !== "inactive") recorder.stop();
+      recorderRef.current = null;
+      const closeAudioContext = () => {
+        if (!audioContext || audioGenerationRef.current !== cleanupGeneration) {
+          return;
+        }
+        if (audioContext.state !== "closed") void audioContext.close();
+        if (audioContextRef.current === audioContext) {
+          audioContextRef.current = null;
+        }
+      };
+      const pendingLoad = soundfontLoadRef.current;
+      if (pendingLoad) {
+        void pendingLoad.then(closeAudioContext, closeAudioContext);
+      } else {
+        closeAudioContext();
+      }
     };
   }, []);
 

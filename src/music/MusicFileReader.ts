@@ -2,21 +2,12 @@
 
 import type { MusicSong } from "./model/MusicSong";
 import { TxtMusicParser } from "./parsers/TxtMusicParser";
-import { MidiMusicParser } from "./parsers/MidiMusicParser";
 
 export class MusicFileReader {
-    private readonly txtParser =
-        new TxtMusicParser();
-
-    private readonly midiParser =
-        new MidiMusicParser();
+    private readonly txtParser = new TxtMusicParser();
 
     async read(file: File): Promise<MusicSong> {
-        const extension =
-            file.name
-                .split(".")
-                .pop()
-                ?.toLowerCase();
+        const extension = file.name.split(".").pop()?.toLowerCase();
 
         switch (extension) {
             case "txt": {
@@ -25,18 +16,8 @@ export class MusicFileReader {
                 return this.txtParser.parse(content);
             }
 
-            case "mid":
-            case "midi": {
-                const content =
-                    await file.arrayBuffer();
-
-                return this.midiParser.parse(content);
-            }
-
             default:
-                throw new Error(
-                    `Format non supporté : .${extension}`,
-                );
+                throw new Error(`Format non supporté : .${extension}`);
         }
     }
 }
