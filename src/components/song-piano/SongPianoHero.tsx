@@ -1,10 +1,10 @@
-import sceneBackground from "../../assets/fond_reachy.png";
+import sceneBackground from "../../assets/fond.png";
 import PianoCanvas from "../canvas/PianoCanvas.tsx";
 
 export default function SongPianoHero() {
-    return (
-        <main
-            className="
+  return (
+    <main
+      className="
         relative
         min-h-screen
         overflow-hidden
@@ -12,12 +12,12 @@ export default function SongPianoHero() {
         bg-center
         bg-no-repeat
       "
-            style={{
-                backgroundImage: `url(${sceneBackground})`,
-            }}
-        >
-            <div
-                className="
+      style={{
+        backgroundImage: `url(${sceneBackground})`,
+      }}
+    >
+      <div
+        className="
           relative
           z-10
           mx-auto
@@ -29,31 +29,27 @@ export default function SongPianoHero() {
           px-6
           py-6
         "
-            >
-                {/* Future UI */}
-                <header className="flex min-h-20 items-center justify-between">
-                    <div>
-                        {/* score */}
-                    </div>
+      >
+        {/* Future UI */}
+        <header className="flex min-h-20 items-center justify-between">
+          <div>{/* score */}</div>
 
-                    <div>
-                        {/* combo / progression */}
-                    </div>
-                </header>
+          <div>{/* combo / progression */}</div>
+        </header>
 
-                {/* Zone de jeu */}
-                <div
-                    className="
+        {/* Zone de jeu */}
+        <div
+          className="
             mx-auto
             aspect-video
             w-full
             max-w-[1000px]
             overflow-hidden
           "
-                >
-                    <PianoCanvas />
-                </div>
-            </div>
-        </main>
-    );
+        >
+          <PianoCanvas />
+        </div>
+      </div>
+    </main>
+  );
 }

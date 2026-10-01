@@ -1,19 +1,28 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Chrono } from "../components/Chrono";
 import { FreeModePauseMenu } from "../components/FreeModePauseMenu";
+import type { Instrument } from "../components/InstrumentSelector";
 import PianoHero from "../components/PianoHero";
 
 type FreeGameState = {
-  instrument?: "piano" | "guitar" | "bass";
+  instrument?: Instrument;
 };
 
 function FreeGamePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { instrument } = (location.state as FreeGameState) ?? {};
+  const { instrument: initialInstrument } =
+    (location.state as FreeGameState) ?? {};
+  const [instrument, setInstrument] = useState(initialInstrument);
   const [isPaused, setIsPaused] = useState(false);
   const [shouldSaveRecording, setShouldSaveRecording] = useState(false);
+  const [replayRequest, setReplayRequest] = useState(0);
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [sessionKey, setSessionKey] = useState(0);
   const [saveStatus, setSaveStatus] = useState("");
+  const [hasStarted, setHasStarted] = useState(false);
+  const [duration, setDuration] = useState("0:00");
 
   const downloadRecording = (recording: Blob) => {
     const extension = recording.type.includes("mp4")
@@ -41,29 +50,64 @@ function FreeGamePage() {
     setShouldSaveRecording(false);
   };
 
+  const handleNotePlayed = () => setHasStarted(true);
+  const pauseSession = () => setIsPaused(true);
+  const resumeSession = () => setIsPaused(false);
+
+  const restartSession = () => {
+    setHasStarted(false);
+    setDuration("0:00");
+    setIsPaused(false);
+    setShouldSaveRecording(false);
+    setReplayRequest(0);
+    setIsReplaying(false);
+    setSaveStatus("");
+    setSessionKey((key) => key + 1);
+  };
+
   return (
     <div className="game-page">
-      {/* Navbar / Player spécifique au mode libre */}
+      <Chrono
+        hasStarted={hasStarted}
+        isPaused={isPaused}
+        resetKey={sessionKey}
+        onDurationChange={setDuration}
+      />
 
       {instrument && (
         <>
-          <div className={isPaused ? "hidden" : undefined}>
+          <div className={isPaused && !isReplaying ? "hidden" : undefined}>
             <PianoHero
+              key={sessionKey}
               instrument={instrument}
               isPaused={isPaused}
+              isReplaying={isReplaying}
               shouldSaveRecording={shouldSaveRecording}
+              replayRequest={replayRequest}
               onRecordingReady={downloadRecording}
               onRecordingError={handleRecordingError}
-              onPause={() => setIsPaused(true)}
-              onResume={() => setIsPaused(false)}
+              onNotePlayed={handleNotePlayed}
+              onReplayComplete={() => setIsReplaying(false)}
+              onStopReplay={() => setIsReplaying(false)}
+              onPause={pauseSession}
+              onResume={resumeSession}
             />
           </div>
-          {isPaused && (
+          {isPaused && !isReplaying && (
             <FreeModePauseMenu
               isOpen
+              duration={duration}
+              instrument={instrument}
+              onChangeInstrument={setInstrument}
               saveStatus={saveStatus}
               isSaveDisabled={shouldSaveRecording}
-              onResume={() => setIsPaused(false)}
+              onResume={resumeSession}
+              onListen={() => {
+                setSaveStatus("");
+                setIsReplaying(true);
+                setReplayRequest((request) => request + 1);
+              }}
+              onRestart={restartSession}
               onSave={() => {
                 setSaveStatus("Préparation de l'enregistrement...");
                 setShouldSaveRecording(true);
