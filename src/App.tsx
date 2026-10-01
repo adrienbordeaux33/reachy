@@ -6,6 +6,7 @@ import FreeGamePage from "./pages/FreeGamePage";
 
 import "./App.css";
 
+
 function App() {
     return (
         <main className="app">
@@ -14,6 +15,7 @@ function App() {
                 <Route path="/game" element={<GamePage />} />
                 <Route path="/free-game" element={<FreeGamePage />} />
             </Routes>
+        <SongPianoHero />
         </main>
     );
 }
