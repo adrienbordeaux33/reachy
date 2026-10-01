@@ -37,17 +37,23 @@ const timeline = new GameTimeline(beatmap, {
     postHitTime: 0.15,
 });
 
-interface SongPianoHeroProps{
-    isPaused?: boolean;
+export interface SongGameResult {
+    score: number;
+    hits: number;
+    misses: number;
 }
 
-const EMPTY_PRESSED_NOTES =
-    new Set<number>();
+interface SongPianoHeroProps{
+    isPaused?: boolean;
+    restartKey?: number;
+    onFinished: (result: SongGameResult) => void;
+}
 
+const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
+export default function SongPianoHero({isPaused, restartKey, onFinished} : SongPianoHeroProps) {
     const playerRef =
         useRef<MusicPlayer | null>(null);
 
@@ -64,6 +70,11 @@ export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
         useState(() => ({
             ...engine.getState(),
         }));
+
+    const hasFinishedRef = useRef(false);
+
+    const previousRestartKeyRef = useRef(restartKey);
+
     const lastUiStateRef = useRef(engine.getState());
 
     const getSongTime =
@@ -125,55 +136,58 @@ export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
     /**
      * Lance/recommence le morceau.
      */
-    const startGame = async () => {
-        playerRef.current?.stop();
+    const startGame =
+        useCallback(async () => {
+            playerRef.current?.stop();
 
-        let audioContext =
-            audioContextRef.current;
+            let audioContext =
+                audioContextRef.current;
 
-        if (audioContext === null) {
-            audioContext =
-                new AudioContext();
+            if (audioContext === null) {
+                audioContext =
+                    new AudioContext();
 
-            audioContextRef.current =
-                audioContext;
-        }
+                audioContextRef.current =
+                    audioContext;
+            }
 
-        if (
-            audioContext.state === "suspended"
-        ) {
-            await audioContext.resume();
-        }
+            if (
+                audioContext.state ===
+                "suspended"
+            ) {
+                await audioContext.resume();
+            }
 
+            const gameStartTime =
+                audioContext.currentTime + 0.05;
 
-        const gameStartTime = audioContext.currentTime + 0.05;
+            const songStartTime =
+                gameStartTime +
+                NOTE_TRAVEL_TIME;
 
-        const songStartTime = gameStartTime + LEAD_IN;
+            const player =
+                new MusicPlayer();
 
-        const player = new MusicPlayer();
+            playerRef.current = player;
 
-        playerRef.current = player;
+            hasFinishedRef.current = false;
+            engine.restart();
+            syncGameState();
 
-        engine.restart();
-        syncGameState();
+            player.play(
+                song,
+                audioContext,
+                songStartTime,
+            );
 
-        /*
-         * Audio ET jeu reçoivent exactement
-         * le même instant de départ.
-         */
-        player.play(
-            song,
-            audioContext,
-            songStartTime,
-        );
+            clockRef.current.start(
+                audioContext,
+                gameStartTime,
+            );
 
-        clockRef.current.start(
-            audioContext,
-            gameStartTime,
-        );
-
-        setIsPlaying(true);
-    };
+            setPressedNotes(new Set());
+            setIsPlaying(true);
+        }, [syncGameState]);
 
     useEffect(() => {
         const clock = clockRef.current;
@@ -254,6 +268,26 @@ export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
 
             syncGameState();
 
+            const state =
+                engine.getState();
+
+            if (
+                state.status === "finished" &&
+                !hasFinishedRef.current
+            ) {
+                hasFinishedRef.current = true;
+
+                playerRef.current?.stop();
+
+                setIsPlaying(false);
+
+                onFinished({
+                    score: state.score,
+                    hits: state.hits,
+                    misses: state.misses,
+                });
+            }
+
             frameId =
                 requestAnimationFrame(
                     updateGame,
@@ -268,11 +302,7 @@ export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
         return () => {
             cancelAnimationFrame(frameId);
         };
-    }, [
-        getSongTime,
-        syncGameState,
-    ]);
-
+    }, [getSongTime, syncGameState, onFinished]);
     useEffect(() => {
         const audioContext =
             audioContextRef.current;
@@ -299,6 +329,22 @@ export default function SongPianoHero({isPaused} : SongPianoHeroProps) {
         });
     }, [isPaused, isPlaying]);
 
+    useEffect(() => {
+        if (
+            restartKey ===
+            previousRestartKeyRef.current
+        ) {
+            return;
+        }
+
+        previousRestartKeyRef.current =
+            restartKey;
+
+        void startGame();
+    }, [
+        restartKey,
+        startGame,
+    ]);
 
     return (
             <div className=" relative z-10 mx-auto flex min-h-1/2 w-full max-w-[1400px] flex-col px-6 py-6">

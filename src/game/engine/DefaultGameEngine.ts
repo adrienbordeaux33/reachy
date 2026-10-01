@@ -169,17 +169,14 @@ export class DefaultGameEngine
             return;
         }
 
-        this.state.currentTime =
-            currentTime;
+        this.state.currentTime = currentTime;
 
         this.detectMisses(currentTime);
 
-        if (
-            currentTime >=
-            this.beatmap.duration
-        ) {
-            this.state.status =
-                "finished";
+        const finishTime = this.beatmap.duration + this.config.goodWindow;
+
+        if (currentTime >= finishTime) {
+            this.state.status = "finished";
         }
     }
 
