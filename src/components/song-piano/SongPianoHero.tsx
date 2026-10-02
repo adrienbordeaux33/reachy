@@ -13,7 +13,13 @@ import { MusicPlayer } from "../../music/player/MusicPlayer";
 import { TxtMusicParser } from "../../music/parsers/TxtMusicParser";
 import PianoCanvas from "../canvas/PianoCanvas";
 import { attachKeyboardInput } from "../input/keyboardInput";
+
+import type {PlayMode} from "../../game/model/PlayMode.ts";
+import type {Instrument} from "../../audio/Instrument.ts";
+import {MidiMusicParser} from "../../music/parsers/MidiMusicParser.ts";
+
 import type { ReachyRobotAction } from "../ReachyRobot/ReachyRobot";
+
 
 const MIN_PLAYBACK_RATE = 0.25;
 const MAX_PLAYBACK_RATE = 2;
@@ -28,50 +34,74 @@ export interface SongGameResult {
   wrongHits: number;
 }
 
+
+type SongFormat = "txt" | "midi";
+
 interface SongPianoHeroProps {
-  songSource: string;
-  instrument?: Instrument;
-  tempo: number;
-  isPaused?: boolean;
-  playMode: PlayMode;
-  restartKey?: number;
-  onFinished: (result: SongGameResult) => void;
-  onRobotEvent?: (action: ReachyRobotAction) => void;
+    songSource: string | ArrayBuffer;
+    songFormat: SongFormat;
+    instrument?: Instrument;
+    tempo: number;
+    isPaused?: boolean;
+    playMode: "listen" | "play";
+    restartKey?: number;
+    onFinished: (result: SongGameResult) => void;
+    onRobotEvent?: (action: ReachyRobotAction) => void;
 }
 
-export default function SongPianoHero({
-  onRobotEvent,
-  songSource,
-  instrument,
-  tempo,
-  isPaused = false,
-  playMode,
-  restartKey,
-  onFinished,
-}: SongPianoHeroProps) {
-  const { song, engine, timeline } = useMemo(() => {
-    const parser = new TxtMusicParser();
-    const beatmapGenerator = new BeatmapGenerator();
-    const parsedSong = parser.parse(songSource);
-    const beatmap = beatmapGenerator.generate(parsedSong);
-    const gameEngine = new DefaultGameEngine();
+const EMPTY_PRESSED_NOTES = new Set<number>();
 
-    gameEngine.load(beatmap);
+const LEAD_IN = NOTE_TRAVEL_TIME;
 
-    return {
-      song: parsedSong,
-      engine: gameEngine,
-      timeline: new GameTimeline(beatmap, {
-        travelTime: NOTE_TRAVEL_TIME,
-        postHitTime: 0.15,
-      }),
-    };
-  }, [songSource]);
+export default function SongPianoHero({onRobotEvent, songSource, songFormat, tempo, instrument, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
 
-  const playbackRate = Math.min(
-    MAX_PLAYBACK_RATE,
-    Math.max(MIN_PLAYBACK_RATE, tempo / 100),
-  );
+    const { song, engine, timeline } = useMemo(() => {
+        const song = (() => {
+            if (songFormat === "txt") {
+                if (typeof songSource !== "string") {
+                    throw new Error(
+                        "Source TXT invalide.",
+                    );
+                }
+
+                return new TxtMusicParser().parse(
+                    songSource,
+                );
+            }
+
+            if (!(songSource instanceof ArrayBuffer)) {
+                throw new Error(
+                    "Source MIDI invalide.",
+                );
+            }
+
+            return new MidiMusicParser().parse(
+                songSource,
+            );
+        })();
+
+        const beatmapGenerator = new BeatmapGenerator();
+
+        const beatmap = beatmapGenerator.generate(song);
+
+        const engine = new DefaultGameEngine();
+
+        engine.load(beatmap);
+
+        const timeline =
+            new GameTimeline(beatmap, {
+                travelTime: NOTE_TRAVEL_TIME,
+                postHitTime: 0.15,
+            });
+
+        return {
+            song,
+            engine,
+            timeline,
+        };
+    }, [songSource, songFormat]);
+  
+  const playbackRate = Math.min(MAX_PLAYBACK_RATE,Math.max(MIN_PLAYBACK_RATE, tempo / 100),);
   const currentPlaybackRateRef = useRef(playbackRate);
   const currentInstrumentRef = useRef(instrument);
   const playerRef = useRef<MusicPlayer | null>(null);
