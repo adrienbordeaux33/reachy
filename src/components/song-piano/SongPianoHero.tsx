@@ -18,6 +18,9 @@ import { attachKeyboardInput } from "../input/keyboardInput";
 import type {PlayMode} from "../../game/model/PlayMode.ts";
 
 
+const MIN_PLAYBACK_RATE = 0.25;
+const MAX_PLAYBACK_RATE = 2;
+
 
 export interface SongGameResult {
     mode: PlayMode;
@@ -29,6 +32,7 @@ export interface SongGameResult {
 
 interface SongPianoHeroProps{
     songSource: string;
+    tempo : number;
     isPaused?: boolean;
     playMode: "listen" | "play";
     restartKey?: number;
@@ -39,7 +43,7 @@ const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({songSource, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
+export default function SongPianoHero({songSource, tempo, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
 
     const {song, engine, timeline} = useMemo(() => {
         const parser = new TxtMusicParser();
@@ -69,6 +73,11 @@ export default function SongPianoHero({songSource, isPaused, playMode, restartKe
         };
     }, [songSource]);
 
+
+
+
+    const playbackRate = Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, tempo / 100,));
+    const currentPlaybackRateRef = useRef(playbackRate);
 
     const playerRef =
         useRef<MusicPlayer | null>(null);
@@ -158,33 +167,21 @@ export default function SongPianoHero({songSource, isPaused, playMode, restartKe
         useCallback(async () => {
             playerRef.current?.stop();
 
-            let audioContext =
-                audioContextRef.current;
+            let audioContext = audioContextRef.current;
 
-            if (audioContext === null) {
-                audioContext =
-                    new AudioContext();
-
-                audioContextRef.current =
-                    audioContext;
+            if (audioContext === null) {audioContext = new AudioContext();
+                audioContextRef.current = audioContext;
             }
 
-            if (
-                audioContext.state ===
-                "suspended"
-            ) {
+            if (audioContext.state ==="suspended") {
                 await audioContext.resume();
             }
 
-            const gameStartTime =
-                audioContext.currentTime + 0.05;
+            const gameStartTime = audioContext.currentTime + 0.05;
 
-            const songStartTime =
-                gameStartTime +
-                NOTE_TRAVEL_TIME;
+            const songStartTime = gameStartTime + NOTE_TRAVEL_TIME / playbackRate;
 
-            const player =
-                new MusicPlayer();
+            const player = new MusicPlayer();
 
             playerRef.current = player;
 
@@ -196,6 +193,8 @@ export default function SongPianoHero({songSource, isPaused, playMode, restartKe
                 song,
                 audioContext,
                 songStartTime,
+                playbackRate,
+                0
             );
 
             clockRef.current.start(
@@ -203,9 +202,11 @@ export default function SongPianoHero({songSource, isPaused, playMode, restartKe
                 gameStartTime,
             );
 
+            clockRef.current.setPlaybackRate(playbackRate);
+
             setPressedNotes(new Set());
             setIsPlaying(true);
-        }, [engine, song, syncGameState]);
+        }, [engine, song, syncGameState, playbackRate]);
 
     useEffect(() => {
         const clock = clockRef.current;
@@ -364,6 +365,59 @@ export default function SongPianoHero({songSource, isPaused, playMode, restartKe
     }, [
         restartKey,
         startGame,
+    ]);
+
+    useEffect(() => {
+        clockRef.current.setPlaybackRate(
+            playbackRate,
+        );
+    }, [playbackRate]);
+
+    useEffect(() => {
+        const previousRate =
+            currentPlaybackRateRef.current;
+
+        if (previousRate === playbackRate) {
+            return;
+        }
+
+        currentPlaybackRateRef.current =
+            playbackRate;
+
+        const audioContext =
+            audioContextRef.current;
+
+        if (
+            audioContext === null ||
+            !isPlaying
+        ) {
+            clockRef.current.setPlaybackRate(
+                playbackRate,
+            );
+
+            return;
+        }
+
+        // Capturer AVANT le changement de rate.
+        const songTime =
+            getSongTime();
+
+        clockRef.current.setPlaybackRate(
+            playbackRate,
+        );
+
+        playerRef.current?.play(
+            song,
+            audioContext,
+            audioContext.currentTime,
+            playbackRate,
+            songTime,
+        );
+    }, [
+        playbackRate,
+        isPlaying,
+        song,
+        getSongTime,
     ]);
 
     return (

@@ -82,6 +82,7 @@ function GamePage() {
                 key={selectedSong.id}
                 songSource={selectedSong.source}
                 playMode={playMode}
+                tempo={tempo}
                 isPaused={isPaused}
                 restartKey={restartKey}
                 onFinished={handleGameFinished}
