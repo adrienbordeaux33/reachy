@@ -50,6 +50,42 @@ reachy-mini-daemon --sim
 
 La fenêtre du simulateur MuJoCo doit s’ouvrir et rester active pendant la session. Le daemon expose son API sur `http://127.0.0.1:8000` par défaut. Laisse ce terminal ouvert.
 
+### Reachy Mini Lite connecté en USB (Windows)
+
+Cette procédure concerne le modèle **Reachy Mini Lite** relié au PC en USB. Elle ne nécessite pas Hugging Face ni MuJoCo. Le robot doit aussi être alimenté avec son adaptateur secteur. Utilise un câble USB qui transmet les données.
+
+Dans PowerShell, à la racine du projet, crée et active un environnement Python, puis installe le paquet sans l’option MuJoCo :
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install "reachy-mini"
+```
+
+Dans ce terminal, démarre le daemon en **mode matériel**, sans `--sim`, et laisse-le ouvert :
+
+```powershell
+reachy-mini-daemon
+```
+
+Vérifie que le backend du robot est prêt :
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/state/full
+```
+
+La commande doit renvoyer l’état du robot en JSON. `/docs` peut vérifier que le serveur HTTP est lancé, mais seul `/api/state/full` permet de vérifier que le backend répond. Si cette dernière URL renvoie `503` avec `Backend not running`, le serveur écoute mais le backend matériel n’est pas prêt : consulte l’erreur affichée dans le terminal du daemon et vérifie l’alimentation ainsi que la connexion USB.
+
+Dans un second terminal PowerShell, démarre l’application :
+
+```powershell
+npm install
+npm run dev
+```
+
+Dans la version actuelle de l’application, l’accès au daemon local passe par le mode nommé **Simulation** dans le widget. Sélectionne-le pour joindre `http://127.0.0.1:8000`; les commandes de danse et de réaction sont alors envoyées à l’API du daemon matériel. Le libellé et le message « aucun robot n’est piloté » dans l’interface sont actuellement trompeurs pour ce cas : le robot USB peut bien bouger. Garde-le dégagé pendant les essais.
+
 ### 3. Lancer l’application
 
 Dans un second terminal, à la racine du projet, installe les dépendances JavaScript si nécessaire puis démarre Vite :
