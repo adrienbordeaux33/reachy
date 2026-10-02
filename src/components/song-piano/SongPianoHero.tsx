@@ -36,6 +36,7 @@ interface SongPianoHeroProps {
     isPaused?: boolean;
     playMode: "listen" | "play";
     restartKey?: number;
+    resetKey?: number;
     onFinished: (result: SongGameResult) => void;
     onStarted?: () => void;
     onRobotEvent?: (action: ReachyRobotAction) => void;
@@ -53,6 +54,7 @@ export default function SongPianoHero({
     isPaused,
     playMode,
     restartKey,
+    resetKey,
     onFinished,
     onStarted,
     onRobotEvent,
@@ -99,6 +101,7 @@ export default function SongPianoHero({
         Math.max(MIN_PLAYBACK_RATE, tempo / 100),
     );
     const currentPlaybackRateRef = useRef(playbackRate);
+    const currentInstrumentRef = useRef(instrument);
 
     const playerRef = useRef<MusicPlayer | null>(null);
 
@@ -130,6 +133,7 @@ export default function SongPianoHero({
     const hasFinishedRef = useRef(false);
 
     const previousRestartKeyRef = useRef(restartKey);
+    const previousResetKeyRef = useRef(resetKey);
 
     const lastUiStateRef = useRef(engine.getState());
 
@@ -389,7 +393,29 @@ export default function SongPianoHero({
             engine.resume();
         });
     }, [engine, isPaused, isPlaying]);
+    useEffect(() => {
+        if (resetKey === previousResetKeyRef.current) {
+            return;
+        }
 
+        previousResetKeyRef.current = resetKey;
+
+        playerRef.current?.stop();
+        clockRef.current.stop();
+        engine.stop();
+        engine.restart();
+
+        hasFinishedRef.current = false;
+        setIsPlaying(false);
+        setPressedNotes(new Set());
+
+        const snapshot = {
+            ...engine.getState(),
+        };
+
+        lastUiStateRef.current = snapshot;
+        setGameState(snapshot);
+    }, [resetKey, engine]);
     useEffect(() => {
         if (restartKey === previousRestartKeyRef.current) {
             return;
@@ -403,7 +429,32 @@ export default function SongPianoHero({
     useEffect(() => {
         clockRef.current.setPlaybackRate(playbackRate);
     }, [playbackRate]);
+    useEffect(() => {
+        const previousInstrument = currentInstrumentRef.current;
 
+        if (previousInstrument === instrument) {
+            return;
+        }
+
+        currentInstrumentRef.current = instrument;
+
+        const audioContext = audioContextRef.current;
+
+        if (audioContext === null || !isPlaying) {
+            return;
+        }
+
+        const songTime = getSongTime();
+
+        playerRef.current?.play(
+            song,
+            audioContext,
+            audioContext.currentTime,
+            playbackRate,
+            songTime,
+            instrument,
+        );
+    }, [instrument, isPlaying, song, playbackRate, getSongTime]);
     useEffect(() => {
         const previousRate = currentPlaybackRateRef.current;
 
@@ -432,8 +483,9 @@ export default function SongPianoHero({
             audioContext.currentTime,
             playbackRate,
             songTime,
+            instrument,
         );
-    }, [playbackRate, isPlaying, song, getSongTime]);
+    }, [playbackRate, isPlaying, song, getSongTime, instrument]);
 
     return (
         <div className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col px-4 py-2">
