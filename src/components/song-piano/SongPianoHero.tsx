@@ -15,6 +15,7 @@ import { MusicPlayer } from "../../music/player/MusicPlayer";
 import { GameClock } from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
+import type { ReachyRobotAction } from "../ReachyRobot/ReachyRobot";
 
 //
 // Chargement du morceau.
@@ -38,7 +39,11 @@ const timeline = new GameTimeline(beatmap, {
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero() {
+interface SongPianoHeroProps {
+  onRobotEvent?: (action: ReachyRobotAction) => void;
+}
+
+export default function SongPianoHero({ onRobotEvent }: SongPianoHeroProps) {
   const playerRef = useRef<MusicPlayer | null>(null);
 
   const clockRef = useRef(new GameClock());
@@ -54,6 +59,12 @@ export default function SongPianoHero() {
     ...engine.getState(),
   }));
   const lastUiStateRef = useRef(engine.getState());
+  const onRobotEventRef = useRef(onRobotEvent);
+  const consecutiveMissesRef = useRef(0);
+
+  useEffect(() => {
+    onRobotEventRef.current = onRobotEvent;
+  }, [onRobotEvent]);
 
   const getSongTime = useCallback(() => {
     return clockRef.current.getCurrentTime() - LEAD_IN;
@@ -95,6 +106,23 @@ export default function SongPianoHero() {
     lastUiStateRef.current = snapshot;
 
     setGameState(snapshot);
+
+    if (next.status === "playing" && previous.status !== "playing") {
+      consecutiveMissesRef.current = 0;
+    }
+
+    if (next.misses > previous.misses) {
+      const previousMissStreak = consecutiveMissesRef.current;
+      consecutiveMissesRef.current += next.misses - previous.misses;
+      if (previousMissStreak < 5 && consecutiveMissesRef.current >= 5) {
+        onRobotEventRef.current?.("five-missed");
+      }
+    }
+
+    if (next.hits > previous.hits) {
+      consecutiveMissesRef.current = 0;
+      if (next.combo === 3) onRobotEventRef.current?.("three-success");
+    }
   }, []);
 
   /**
@@ -123,6 +151,7 @@ export default function SongPianoHero() {
 
     playerRef.current = player;
 
+    consecutiveMissesRef.current = 0;
     engine.restart();
     syncGameState();
 

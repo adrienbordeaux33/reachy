@@ -1,0 +1,535 @@
+.reachy-robot {
+  --robot-ink: #f0f4ef;
+  --robot-muted: #a8b9ae;
+  --robot-line: rgba(211, 230, 216, 0.16);
+  --robot-green: #75e6ac;
+  width: min(100%, 460px);
+  overflow: hidden;
+  border: 1px solid var(--robot-line);
+  border-radius: 14px;
+  background: linear-gradient(
+    155deg,
+    rgba(29, 48, 37, 0.97),
+    rgba(10, 19, 15, 0.98)
+  );
+  color: var(--robot-ink);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.28);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.reachy-robot--compact {
+  width: min(100%, 340px);
+}
+
+.reachy-robot__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px 14px;
+}
+
+.reachy-robot__eyebrow {
+  margin: 0 0 4px;
+  color: var(--robot-green);
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.reachy-robot__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 750;
+}
+
+.reachy-robot__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  color: var(--robot-muted);
+  font-size: 0.72rem;
+}
+
+.reachy-robot__status > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #85918a;
+}
+
+.reachy-robot__status--streaming > span {
+  background: var(--robot-green);
+  box-shadow: 0 0 12px rgba(117, 230, 172, 0.8);
+}
+
+.reachy-robot__status--simulation > span {
+  background: #f4c66a;
+  box-shadow: 0 0 12px rgba(244, 198, 106, 0.55);
+}
+
+.reachy-robot__status--connecting > span {
+  background: #f4c66a;
+  animation: reachy-status-pulse 1s ease-in-out infinite alternate;
+}
+
+.reachy-robot__status--error > span {
+  background: #f17e77;
+}
+
+.reachy-robot__stage {
+  position: relative;
+  display: grid;
+  min-height: 192px;
+  place-items: center;
+  overflow: hidden;
+  border-block: 1px solid var(--robot-line);
+  background:
+    radial-gradient(
+      ellipse at 50% 82%,
+      rgba(106, 187, 134, 0.17),
+      transparent 52%
+    ),
+    linear-gradient(
+      120deg,
+      rgba(67, 100, 76, 0.16),
+      transparent 46%,
+      rgba(71, 115, 109, 0.12)
+    );
+}
+
+.reachy-robot__mascot {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 144px;
+  height: 166px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transform-origin: 50% 88%;
+  transition: transform 350ms ease;
+}
+
+.reachy-robot__antenna {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  width: 5px;
+  height: 47px;
+  border-radius: 99px;
+  background: linear-gradient(#c5efcf, #609c75);
+  transform-origin: 50% 100%;
+  transition: transform 300ms ease;
+}
+
+.reachy-robot__antenna--left {
+  left: 43px;
+  transform: rotate(-12deg);
+}
+
+.reachy-robot__antenna--right {
+  right: 43px;
+  transform: rotate(12deg);
+}
+
+.reachy-robot__head {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 124px;
+  height: 91px;
+  place-items: center;
+  margin-bottom: -3px;
+  border: 2px solid #d4e7d8;
+  border-radius: 34px 34px 29px 29px;
+  background: linear-gradient(145deg, #f3f5ed, #bdcfc1);
+  box-shadow:
+    inset -8px -9px 18px rgba(33, 72, 48, 0.14),
+    0 13px 24px rgba(0, 0, 0, 0.25);
+  transform-origin: 50% 82%;
+  transition: transform 350ms ease;
+}
+
+.reachy-robot__ear {
+  position: absolute;
+  top: 25px;
+  width: 10px;
+  height: 27px;
+  border: 2px solid #cad8cb;
+  border-radius: 8px;
+  background: #8ca394;
+}
+
+.reachy-robot__ear--left {
+  left: -8px;
+}
+
+.reachy-robot__ear--right {
+  right: -8px;
+}
+
+.reachy-robot__face {
+  display: flex;
+  width: 83px;
+  height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  border: 2px solid #314b3b;
+  border-radius: 18px;
+  background: #17271d;
+  box-shadow: inset 0 0 14px rgba(0, 0, 0, 0.65);
+}
+
+.reachy-robot__eye {
+  width: 8px;
+  height: 12px;
+  border-radius: 50%;
+  background: #91f0b3;
+  box-shadow: 0 0 9px rgba(145, 240, 179, 0.78);
+}
+
+.reachy-robot__mouth {
+  position: absolute;
+  top: 62px;
+  left: 50%;
+  width: 17px;
+  height: 6px;
+  border-bottom: 2px solid #94d8a7;
+  border-radius: 50%;
+  transform: translateX(-50%);
+}
+
+.reachy-robot__neck {
+  z-index: 0;
+  width: 44px;
+  height: 17px;
+  border-inline: 5px solid #94aa99;
+  background: #6e8976;
+}
+
+.reachy-robot__base {
+  width: 102px;
+  height: 31px;
+  border: 2px solid #b2c3b5;
+  border-radius: 15px 15px 23px 23px;
+  background: linear-gradient(135deg, #d9e3d8, #819887);
+  box-shadow: 0 9px 19px rgba(0, 0, 0, 0.3);
+}
+
+.reachy-robot__video {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: #101a14;
+}
+
+.reachy-robot__video.is-visible {
+  display: block;
+}
+
+.reachy-robot__mode {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 20px 12px;
+  border: 1px solid var(--robot-line);
+  border-radius: 8px;
+  padding: 3px;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.reachy-robot__mode button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--robot-muted);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.reachy-robot__mode button[aria-pressed="true"] {
+  background: rgba(117, 230, 172, 0.2);
+  color: var(--robot-green);
+}
+
+.reachy-robot__mode button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.reachy-robot__mode button:focus-visible {
+  outline: 2px solid #f2d38d;
+  outline-offset: 1px;
+}
+
+.reachy-robot[data-action="three-success"] .reachy-robot__head {
+  animation: reachy-sharp-side-tilt 760ms ease-in-out 1;
+}
+
+.reachy-robot[data-action="five-missed"] .reachy-robot__head {
+  animation: reachy-no-way 720ms ease-in-out 1;
+}
+
+.reachy-robot__connection {
+  display: grid;
+  gap: 9px;
+  padding: 14px 20px 17px;
+}
+
+.reachy-robot__primary,
+.reachy-robot__secondary,
+.reachy-robot__robot-choice,
+.reachy-robot__tests button {
+  min-height: 44px;
+  border: 1px solid rgba(171, 226, 186, 0.35);
+  border-radius: 8px;
+  color: var(--robot-ink);
+  background: rgba(100, 163, 119, 0.17);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.reachy-robot__primary {
+  border-color: transparent;
+  background: #9be3ad;
+  color: #13241a;
+}
+
+.reachy-robot__primary:hover,
+.reachy-robot__secondary:hover,
+.reachy-robot__robot-choice:hover,
+.reachy-robot__tests button:hover:not(:disabled) {
+  border-color: var(--robot-green);
+  background: rgba(117, 230, 172, 0.26);
+  transform: translateY(-1px);
+}
+
+.reachy-robot__primary:hover {
+  background: #b6f2c3;
+}
+
+.reachy-robot button:focus-visible {
+  outline: 2px solid #f2d38d;
+  outline-offset: 3px;
+}
+
+.reachy-robot button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.reachy-robot__message,
+.reachy-robot__robot-list > p {
+  min-height: 1.2em;
+  margin: 0;
+  color: var(--robot-muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.reachy-robot__robot-list {
+  display: grid;
+  gap: 7px;
+}
+
+.reachy-robot__robot-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 12px;
+  text-align: left;
+}
+
+.reachy-robot__robot-choice span:last-child {
+  color: var(--robot-green);
+  font-size: 0.72rem;
+}
+
+.reachy-robot__tests {
+  border-top: 1px solid var(--robot-line);
+  padding: 13px 20px 18px;
+}
+
+.reachy-robot__tests > p {
+  margin: 0 0 9px;
+  color: var(--robot-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.reachy-robot__tests > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.reachy-robot__tests button {
+  padding: 8px;
+  font-size: 0.72rem;
+}
+
+.reachy-robot--compact .reachy-robot__header {
+  padding: 12px 14px 10px;
+}
+
+.reachy-robot--compact .reachy-robot__stage {
+  min-height: 144px;
+}
+
+.reachy-robot--compact .reachy-robot__mode {
+  margin-inline: 14px;
+}
+
+.reachy-robot--compact .reachy-robot__mascot {
+  transform: scale(0.82);
+}
+
+.reachy-robot--compact .reachy-robot__connection {
+  padding: 11px 14px 13px;
+}
+
+.robot-page {
+  min-height: 100vh;
+  padding: clamp(20px, 5vw, 64px);
+  background:
+    radial-gradient(
+      ellipse at 15% 6%,
+      rgba(88, 142, 102, 0.2),
+      transparent 36%
+    ),
+    linear-gradient(145deg, #101a14, #17251b 54%, #101714);
+  color: #f0f4ef;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.robot-page__header,
+.robot-page__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: #b6c7bb;
+  font-size: 0.82rem;
+}
+
+.robot-page__header a,
+.robot-page__footer a {
+  color: #c8f0d2;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.robot-page__header a:hover,
+.robot-page__footer a:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.robot-page__content {
+  display: grid;
+  width: min(100%, 1040px);
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 460px);
+  align-items: center;
+  gap: clamp(28px, 7vw, 100px);
+  margin: clamp(48px, 10vh, 100px) auto;
+}
+
+.robot-page__eyebrow {
+  margin: 0 0 12px;
+  color: #9be3ad;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+}
+
+.robot-page__content h1 {
+  max-width: 9ch;
+  margin: 0;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  line-height: 0.98;
+}
+
+.robot-page__intro {
+  max-width: 36ch;
+  margin: 20px 0 0;
+  color: #bdc9c0;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.robot-page__footer {
+  width: min(100%, 1040px);
+  margin: 0 auto;
+  border-top: 1px solid rgba(211, 230, 216, 0.16);
+  padding-top: 18px;
+}
+
+@keyframes reachy-status-pulse {
+  to {
+    opacity: 0.35;
+  }
+}
+
+@keyframes reachy-sharp-side-tilt {
+  25% {
+    transform: rotate(22deg) translateY(-2px);
+  }
+  60% {
+    transform: rotate(-20deg) translateY(2px);
+  }
+}
+
+@keyframes reachy-no-way {
+  20%,
+  60% {
+    transform: rotate(-19deg);
+  }
+  40%,
+  80% {
+    transform: rotate(19deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reachy-robot *,
+  .reachy-robot *::before,
+  .reachy-robot *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .robot-page__content {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    margin-block: 48px;
+  }
+
+  .robot-page__content > div {
+    width: min(100%, 460px);
+  }
+
+  .robot-page__content h1 {
+    max-width: 12ch;
+    font-size: 2.8rem;
+  }
+}
