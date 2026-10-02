@@ -40,8 +40,6 @@ Navigation - REACT Router
 
 Affichage dynamique du jeu - CANVAS 2D
 
-Store - À définir : Zustand ou Redux
-
 ## Suivi de projet
 
 Sur Notion en méthode Agile, avec un tableau Kanban pour suivre l'avancement des tâches et des sprints.
