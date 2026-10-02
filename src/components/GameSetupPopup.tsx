@@ -9,6 +9,7 @@ import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
 import { SONG_LIBRARY, type SongId } from "../music/library/SongLibrary.ts";
 import type {Instrument} from "../audio/Instrument.ts";
 import type {UploadedSong} from "../music/model/UploadedSong.ts";
+import {MidiMusicParser} from "../music/parsers/MidiMusicParser.ts";
 
 type MusicMode = "upload" | "library" | "free";
 
@@ -38,26 +39,64 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
         if (!file) return;
 
         try {
-            const content = await file.text();
+            const title = file.name.replace(
+                /\.(txt|mid|midi)$/i,
+                "",
+            );
 
-            // On parse uniquement pour vérifier
-            // que le fichier TXT est valide.
-            const parser = new TxtMusicParser();
-            parser.parse(content);
+            const extension =
+                file.name
+                    .split(".")
+                    .pop()
+                    ?.toLowerCase();
 
-            setUploadedSong({
-                id: crypto.randomUUID(),
-                title: file.name.replace(
-                    /\.txt$/i,
-                    "",
-                ),
-                source: content,
-            });
+            if (extension === "txt") {
+                const source = await file.text();
+
+                // Validation
+                const parser = new TxtMusicParser();
+                parser.parse(source);
+
+                setUploadedSong({
+                    id: crypto.randomUUID(),
+                    title,
+                    format: "txt",
+                    source,
+                });
+
+                return;
+            }
+
+            if (extension === "mid" || extension === "midi") {
+                const source =
+                    await file.arrayBuffer();
+
+                // Validation
+                const parser =
+                    new MidiMusicParser();
+
+                parser.parse(source);
+
+                setUploadedSong({
+                    id: crypto.randomUUID(),
+                    title,
+                    format: "midi",
+                    source,
+                });
+
+                return;
+            }
+
+            throw new Error(
+                "Format de fichier non pris en charge.",
+            );
         } catch (error) {
             console.error(
                 "Impossible de charger le morceau :",
                 error,
             );
+
+            setUploadedSong(null);
         }
     };
 
@@ -163,7 +202,7 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                 <div className="grid gap-5 md:grid-cols-3">
                                     <input
                                         type="file"
-                                        accept=".txt,text/plain"
+                                        accept=".txt,text/plain,.mid,.midi"
                                         onChange={(event) => {
                                             const file =
                                                 event.target.files?.[0] ?? null;

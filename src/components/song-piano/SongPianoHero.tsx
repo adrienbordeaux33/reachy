@@ -17,6 +17,7 @@ import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
 import type {PlayMode} from "../../game/model/PlayMode.ts";
 import type {Instrument} from "../../audio/Instrument.ts";
+import {MidiMusicParser} from "../../music/parsers/MidiMusicParser.ts";
 
 
 const MIN_PLAYBACK_RATE = 0.25;
@@ -31,10 +32,13 @@ export interface SongGameResult {
     wrongHits: number;
 }
 
-interface SongPianoHeroProps{
-    songSource: string;
+type SongFormat = "txt" | "midi";
+
+interface SongPianoHeroProps {
+    songSource: string | ArrayBuffer;
+    songFormat: SongFormat;
     instrument?: Instrument;
-    tempo : number;
+    tempo: number;
     isPaused?: boolean;
     playMode: "listen" | "play";
     restartKey?: number;
@@ -45,26 +49,44 @@ const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({songSource, tempo, instrument, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
+export default function SongPianoHero({songSource, songFormat, tempo, instrument, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
 
-    const {song, engine, timeline} = useMemo(() => {
-        const parser = new TxtMusicParser();
+    const { song, engine, timeline } = useMemo(() => {
+        const song = (() => {
+            if (songFormat === "txt") {
+                if (typeof songSource !== "string") {
+                    throw new Error(
+                        "Source TXT invalide.",
+                    );
+                }
+
+                return new TxtMusicParser().parse(
+                    songSource,
+                );
+            }
+
+            if (!(songSource instanceof ArrayBuffer)) {
+                throw new Error(
+                    "Source MIDI invalide.",
+                );
+            }
+
+            return new MidiMusicParser().parse(
+                songSource,
+            );
+        })();
 
         const beatmapGenerator = new BeatmapGenerator();
 
-        const song =
-            parser.parse(songSource);
-
-        const beatmap =
-            beatmapGenerator.generate(song);
+        const beatmap = beatmapGenerator.generate(song);
 
         const engine = new DefaultGameEngine();
 
         engine.load(beatmap);
 
-        const timeline = new GameTimeline(beatmap, {
-                travelTime:
-                NOTE_TRAVEL_TIME,
+        const timeline =
+            new GameTimeline(beatmap, {
+                travelTime: NOTE_TRAVEL_TIME,
                 postHitTime: 0.15,
             });
 
@@ -73,7 +95,7 @@ export default function SongPianoHero({songSource, tempo, instrument, isPaused, 
             engine,
             timeline,
         };
-    }, [songSource]);
+    }, [songSource, songFormat]);
 
 
 
@@ -402,8 +424,7 @@ export default function SongPianoHero({songSource, tempo, instrument, isPaused, 
         }
 
         // Capturer AVANT le changement de rate.
-        const songTime =
-            getSongTime();
+        const songTime = getSongTime();
 
         clockRef.current.setPlaybackRate(
             playbackRate,

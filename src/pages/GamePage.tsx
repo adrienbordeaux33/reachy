@@ -99,6 +99,7 @@ function GamePage() {
             <SongPianoHero
                 key={selectedSong.id}
                 songSource={selectedSong.source}
+                songFormat={selectedSong.format}
                 playMode={playMode}
                 tempo={tempo}
                 instrument={selectedInstrument}
