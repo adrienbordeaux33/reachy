@@ -39,6 +39,7 @@ const INITIAL_STATE: GameState = {
     combo: 0,
     hits: 0,
     misses: 0,
+    wrongHits: 0
 };
 
 export class DefaultGameEngine
@@ -124,6 +125,9 @@ export class DefaultGameEngine
             );
 
         if (result === null) {
+            this.state.wrongHits += 1;
+            this.state.combo = 0;
+
             return;
         }
 
@@ -169,17 +173,14 @@ export class DefaultGameEngine
             return;
         }
 
-        this.state.currentTime =
-            currentTime;
+        this.state.currentTime = currentTime;
 
         this.detectMisses(currentTime);
 
-        if (
-            currentTime >=
-            this.beatmap.duration
-        ) {
-            this.state.status =
-                "finished";
+        const finishTime = this.beatmap.duration + this.config.goodWindow;
+
+        if (currentTime >= finishTime) {
+            this.state.status = "finished";
         }
     }
 

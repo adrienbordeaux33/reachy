@@ -104,6 +104,7 @@ export function ReachyRobot({
   const [message, setMessage] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [hasVideo, setHasVideo] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSimulation, setIsSimulation] = useState(false);
   const [simulatorStatus, setSimulatorStatus] =
     useState<SimulatorStatus>("disconnected");
@@ -341,6 +342,28 @@ export function ReachyRobot({
     connected: "Simulateur connecté",
     error: "Simulateur à vérifier",
   };
+  const currentStatus = isSimulation ? simulatorStatus : status;
+
+  if (compact && isCollapsed) {
+    return (
+      <button
+        className="reachy-robot__collapsed"
+        type="button"
+        aria-label="Agrandir le panneau Reachy Mini"
+        onClick={() => setIsCollapsed(false)}
+      >
+        <span className="reachy-robot__collapsed-mark" aria-hidden="true">
+          R
+        </span>
+        <span>Reachy Mini</span>
+        <span
+          className="reachy-robot__collapsed-status"
+          data-status={currentStatus}
+          aria-hidden="true"
+        />
+      </button>
+    );
+  }
 
   return (
     <section
@@ -362,6 +385,17 @@ export function ReachyRobot({
             ? simulatorStatusLabel[simulatorStatus]
             : statusLabel[status]}
         </span>
+        {compact && (
+          <button
+            className="reachy-robot__collapse-toggle"
+            type="button"
+            aria-label="Réduire le panneau Reachy Mini"
+            title="Réduire"
+            onClick={() => setIsCollapsed(true)}
+          >
+            <span aria-hidden="true">−</span>
+          </button>
+        )}
       </header>
 
       <div className="reachy-robot__mode" aria-label="Mode de contrôle">

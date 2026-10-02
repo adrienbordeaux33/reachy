@@ -43,6 +43,103 @@
   font-weight: 750;
 }
 
+.reachy-robot__collapse-toggle {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--robot-line);
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--robot-ink);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.reachy-robot__collapse-toggle:hover {
+  border-color: var(--robot-green);
+  background: rgba(117, 230, 172, 0.18);
+}
+
+.reachy-robot__collapsed {
+  display: flex;
+  width: 148px;
+  min-height: 48px;
+  align-items: center;
+  gap: 9px;
+  margin-left: auto;
+  border: 1px solid var(--robot-line);
+  border-radius: 10px;
+  padding: 7px 11px;
+  background: linear-gradient(
+    155deg,
+    rgba(29, 48, 37, 0.97),
+    rgba(10, 19, 15, 0.98)
+  );
+  color: var(--robot-ink);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    transform 160ms ease;
+}
+
+.reachy-robot__collapsed:hover {
+  transform: translateY(-2px);
+  border-color: var(--robot-green);
+}
+
+.reachy-robot__collapsed-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid rgba(117, 230, 172, 0.4);
+  border-radius: 7px;
+  background: rgba(117, 230, 172, 0.15);
+  color: var(--robot-green);
+  font-size: 0.9rem;
+}
+
+.reachy-robot__collapsed-status {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 auto;
+  margin-left: auto;
+  border-radius: 50%;
+  background: #85918a;
+}
+
+.reachy-robot__collapsed-status[data-status="streaming"],
+.reachy-robot__collapsed-status[data-status="connected"] {
+  background: var(--robot-green);
+  box-shadow: 0 0 10px rgba(117, 230, 172, 0.75);
+}
+
+.reachy-robot__collapsed-status[data-status="connecting"] {
+  background: #f4c66a;
+  animation: reachy-status-pulse 1s ease-in-out infinite alternate;
+}
+
+.reachy-robot__collapsed-status[data-status="error"] {
+  background: #f17e77;
+}
+
+.reachy-robot__collapsed:focus-visible {
+  outline: 2px solid #f2d38d;
+  outline-offset: 3px;
+}
+
 .reachy-robot__status {
   display: inline-flex;
   align-items: center;
@@ -386,6 +483,13 @@
 
 .reachy-robot--compact .reachy-robot__header {
   padding: 12px 14px 10px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.reachy-robot--compact .reachy-robot__header:active {
+  cursor: grabbing;
 }
 
 .reachy-robot--compact .reachy-robot__stage {

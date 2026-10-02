@@ -1,53 +1,157 @@
-import { useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import type { PlayMode } from "../game/model/PlayMode.ts";
+import { getSongDefinition, type SongId } from "../music/library/SongLibrary";
 import { PauseMenu } from "../components/PauseMenu";
+import { EndGamePopup } from "../components/EndGamePopup";
 import {
   ReachyRobot,
   type ReachyRobotAction,
   type ReachyRobotActionEvent,
 } from "../components/ReachyRobot/ReachyRobot";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
-import SongPianoHero from "../components/song-piano/SongPianoHero";
+import SongPianoHero, {
+  type SongGameResult,
+} from "../components/song-piano/SongPianoHero";
 
 type GameState = {
   musicMode?: "upload" | "library";
   instrument?: "piano" | "guitar" | "bass";
-  songId?: "mario" | "pirate";
+  songId?: SongId;
 };
 
-type PlayMode = "listen" | "play";
+interface WidgetPosition {
+  left: number;
+  top: number;
+}
+
+interface WidgetDrag {
+  pointerId: number;
+  offsetX: number;
+  offsetY: number;
+}
 
 function GamePage() {
   const location = useLocation();
   const navigate = useNavigate();
-
   const { musicMode, instrument, songId } = (location.state as GameState) ?? {};
-  // États qui seront partagés avec le futur PianoHero
+  const selectedSong = getSongDefinition(songId ?? "mario");
+
   const [playMode, setPlayMode] = useState<PlayMode>("play");
   const [tempo, setTempo] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
+  const [restartKey, setRestartKey] = useState(0);
+  const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
   const [robotAction, setRobotAction] = useState<ReachyRobotActionEvent | null>(
     null,
   );
   const robotActionIdRef = useRef(0);
+  const reachyWidgetRef = useRef<HTMLElement | null>(null);
+  const widgetDragRef = useRef<WidgetDrag | null>(null);
+  const [reachyWidgetPosition, setReachyWidgetPosition] =
+    useState<WidgetPosition | null>(null);
 
-  const handleRobotEvent = (action: ReachyRobotAction) => {
+  const totalAttempts = gameResult
+    ? gameResult.hits + gameResult.misses + gameResult.wrongHits
+    : 0;
+  const successRate =
+    gameResult === null || totalAttempts === 0
+      ? 0
+      : Math.round((gameResult.hits / totalAttempts) * 100);
+
+  const handleRobotEvent = useCallback((action: ReachyRobotAction) => {
     robotActionIdRef.current += 1;
     setRobotAction({
       id: `game-${robotActionIdRef.current}`,
       action,
     });
+  }, []);
+
+  const handleGameFinished = useCallback((result: SongGameResult) => {
+    setGameResult(result);
+  }, []);
+
+  const handleRestart = () => {
+    setGameResult(null);
+    setRestartKey((value) => value + 1);
+    setIsPaused(false);
+  };
+
+  const handlePlayModeChange = (newMode: PlayMode) => {
+    if (newMode === playMode) return;
+
+    setPlayMode(newMode);
+    setGameResult(null);
+    setIsPaused(false);
+    setRestartKey((previous) => previous + 1);
+  };
+
+  const handleWidgetPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    const target = event.target;
+    if (
+      !(target instanceof HTMLElement) ||
+      !target.closest(".reachy-robot__header") ||
+      target.closest("button")
+    ) {
+      return;
+    }
+
+    const widget = reachyWidgetRef.current;
+    if (!widget) return;
+
+    const bounds = widget.getBoundingClientRect();
+    widgetDragRef.current = {
+      pointerId: event.pointerId,
+      offsetX: event.clientX - bounds.left,
+      offsetY: event.clientY - bounds.top,
+    };
+    setReachyWidgetPosition({ left: bounds.left, top: bounds.top });
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  };
+
+  const handleWidgetPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    const drag = widgetDragRef.current;
+    const widget = reachyWidgetRef.current;
+    if (!drag || drag.pointerId !== event.pointerId || !widget) return;
+
+    const bounds = widget.getBoundingClientRect();
+    const maxLeft = Math.max(8, window.innerWidth - bounds.width - 8);
+    const maxTop = Math.max(8, window.innerHeight - bounds.height - 8);
+
+    setReachyWidgetPosition({
+      left: Math.min(maxLeft, Math.max(8, event.clientX - drag.offsetX)),
+      top: Math.min(maxTop, Math.max(8, event.clientY - drag.offsetY)),
+    });
+  };
+
+  const handleWidgetPointerUp = (event: ReactPointerEvent<HTMLElement>) => {
+    if (widgetDragRef.current?.pointerId !== event.pointerId) return;
+
+    widgetDragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   return (
-    <div className="min-h-screen w-full">
-      <SongPianoHero onRobotEvent={handleRobotEvent} />
+    <div className="min-h-screen w-full pt-30">
+      <SongPianoHero
+        key={selectedSong.id}
+        songSource={selectedSong.source}
+        playMode={playMode}
+        tempo={tempo}
+        isPaused={isPaused}
+        restartKey={restartKey}
+        onFinished={handleGameFinished}
+        onRobotEvent={handleRobotEvent}
+      />
 
       <MediaPlayer
         playMode={playMode}
         tempo={tempo}
-        onPlayModeChange={setPlayMode}
+        onPlayModeChange={handlePlayModeChange}
         onTempoChange={setTempo}
         onPause={() => setIsPaused(true)}
       />
@@ -55,10 +159,7 @@ function GamePage() {
       {isPaused && (
         <PauseMenu
           onResume={() => setIsPaused(false)}
-          onRestart={() => {
-            console.log("Recommencer");
-            setIsPaused(false);
-          }}
+          onRestart={handleRestart}
           onChangeInstrument={() => {
             console.log("Changer instrument");
           }}
@@ -66,11 +167,39 @@ function GamePage() {
         />
       )}
 
-      <aside className="fixed bottom-4 right-4 z-40 max-h-[calc(100dvh-2rem)] w-[min(340px,calc(100vw-2rem))] overflow-y-auto">
+      {gameResult !== null && (
+        <div className="fixed inset-0 z-50">
+          <EndGamePopup
+            playMode={playMode}
+            score={gameResult.score}
+            successRate={successRate}
+            onRestart={handleRestart}
+            onQuit={() => navigate("/")}
+          />
+        </div>
+      )}
+
+      <aside
+        ref={reachyWidgetRef}
+        className="fixed bottom-4 right-4 z-40 max-h-[calc(100dvh-2rem)] w-[min(340px,calc(100vw-2rem))] overflow-y-auto"
+        style={
+          reachyWidgetPosition
+            ? {
+                left: reachyWidgetPosition.left,
+                top: reachyWidgetPosition.top,
+                right: "auto",
+                bottom: "auto",
+              }
+            : undefined
+        }
+        onPointerDown={handleWidgetPointerDown}
+        onPointerMove={handleWidgetPointerMove}
+        onPointerUp={handleWidgetPointerUp}
+        onPointerCancel={handleWidgetPointerUp}
+      >
         <ReachyRobot action={robotAction} compact />
       </aside>
 
-      {/* Informations temporaires pour le développement */}
       <div className="mt-4 text-center text-sm text-white/50">
         <p>Source : {musicMode}</p>
         <p>Instrument : {instrument}</p>
