@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import type { MusicSong } from "../music/model/MusicSong";
 import PlayButton from "../components/ui/PlayButton";
 import { GameSetupPopup } from "../components/GameSetupPopup";
 
@@ -13,6 +13,7 @@ function HomePage() {
         musicMode: "upload" | "library" | "free",
         instrument: "piano" | "guitar" | "bass",
         songId?: "mario" | "pirate",
+        uploadedSong?: MusicSong,
     ) => {
         if (musicMode === "free") {
             navigate("/free-game", {
@@ -29,6 +30,7 @@ function HomePage() {
                 musicMode,
                 instrument,
                 songId,
+                uploadedSong,
             },
         });
     };

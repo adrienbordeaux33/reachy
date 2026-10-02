@@ -188,7 +188,6 @@ export function FreeModePauseMenu({
                         </div>
 
                         {/* Quitter */}
-                        {/* Quitter */}
                         <div className="mt-6 flex justify-center">
                             <button
                                 type="button"
