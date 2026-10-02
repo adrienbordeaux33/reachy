@@ -24,6 +24,7 @@ export function MediaPlayer({
     onPause,
 }: MediaPlayerProps) {
     const isFreeMode = playMode === undefined && tempo === undefined;
+    const showPauseButton = isFreeMode || (hasStarted && !isPaused);
     const decreaseTempo = () => {
         if (tempo === undefined || !onTempoChange) return;
 
@@ -154,7 +155,7 @@ export function MediaPlayer({
             {/* PAUSE */}
             <button
                 type="button"
-                onClick={hasStarted && !isPaused ? onPause : onPlay}
+                onClick={showPauseButton ? onPause : onPlay}
                 className={`
     rounded-xl
     border
@@ -163,8 +164,8 @@ export function MediaPlayer({
     uppercase
     tracking-wide
     transition
-    $${
-        hasStarted && !isPaused
+    ${
+        showPauseButton
             ? `
             border-amber-300/60
             bg-amber-400/10
@@ -186,7 +187,7 @@ export function MediaPlayer({
     }
 `}
             >
-                {hasStarted && !isPaused ? "Pause" : "Jouer"}
+                {showPauseButton ? "Pause" : "Jouer"}
             </button>
         </div>
     );

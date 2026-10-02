@@ -32,6 +32,7 @@ interface SongPianoHeroProps {
     songSource: string | ArrayBuffer;
     tempo: number;
     songFormat: SongFormat;
+    songTitle?: string;
     instrument?: Instrument;
     isPaused?: boolean;
     playMode: "listen" | "play";
@@ -49,6 +50,8 @@ const LEAD_IN = NOTE_TRAVEL_TIME;
 export default function SongPianoHero({
     songSource,
     songFormat,
+    songTitle,
+
     instrument,
     tempo,
     isPaused,
@@ -525,7 +528,7 @@ export default function SongPianoHero({
                 drop-shadow-[0_0_10px_rgba(34,211,238,.30)]
             "
                             >
-                                {song.title ?? "Mario"}
+                                {songTitle ?? song.title ?? "Mario"}{" "}
                             </div>
                         </div>
                     </div>
