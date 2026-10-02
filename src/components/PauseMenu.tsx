@@ -1,17 +1,28 @@
 import { useEffect } from "react";
+import type {Instrument} from "../audio/Instrument.ts";
+import {InstrumentSelector} from "./InstrumentSelector.tsx";
 
 interface PauseMenuProps {
     onResume: () => void;
     onRestart: () => void;
     onChangeInstrument: () => void;
     onQuit: () => void;
+
+    showInstrumentSelector: boolean;
+    instrument: Instrument;
+    onInstrumentChange: (
+        instrument: Instrument,
+    ) => void;
 }
 
 export function PauseMenu({
-    onResume,
-    onRestart,
-    onChangeInstrument,
-    onQuit,
+                              onResume,
+                              onRestart,
+                              onChangeInstrument,
+                              onQuit,
+                              showInstrumentSelector,
+                              instrument,
+                              onInstrumentChange
 }: PauseMenuProps) {
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -177,6 +188,17 @@ export function PauseMenu({
                                     →
                                 </div>
                             </button>
+
+                            {showInstrumentSelector && (
+                                <div className="md:col-span-2">
+                                    <InstrumentSelector
+                                        value={instrument}
+                                        onChange={
+                                            onInstrumentChange
+                                        }
+                                    />
+                                </div>
+                            )}
 
                             {/* Quitter */}
                             <button

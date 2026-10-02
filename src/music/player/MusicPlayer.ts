@@ -1,6 +1,8 @@
 // src/music/player/MusicPlayer.ts
 
 import type { MusicSong } from "../model/MusicSong";
+import type {Instrument} from "../../audio/Instrument.ts";
+import {INSTRUMENT_PROFILES} from "../../audio/InstrumentProfiles.ts";
 
 export class MusicPlayer {
     private oscillators: OscillatorNode[] = [];
@@ -11,6 +13,7 @@ export class MusicPlayer {
         startTime: number,
         playbackRate = 1,
         songTime = 0,
+        instrument: Instrument = "piano",
     ): void {
         if (playbackRate <= 0) {
             throw new Error(
@@ -24,14 +27,10 @@ export class MusicPlayer {
             const noteEndTime =
                 note.startTime + note.duration;
 
-            // Note entièrement passée.
             if (noteEndTime <= songTime) {
                 continue;
             }
 
-            /*
-             * Note pas encore commencée.
-             */
             if (note.startTime >= songTime) {
                 const delay =
                     (note.startTime - songTime) /
@@ -41,19 +40,13 @@ export class MusicPlayer {
                     audioContext,
                     note.midi,
                     startTime + delay,
-                    note.duration /
-                    playbackRate,
+                    note.duration / playbackRate,
+                    instrument,
                 );
 
                 continue;
             }
 
-            /*
-             * Le changement de tempo arrive pendant
-             * que cette note devrait être jouée.
-             *
-             * On reprend uniquement la durée restante.
-             */
             const remainingDuration =
                 noteEndTime - songTime;
 
@@ -61,8 +54,8 @@ export class MusicPlayer {
                 audioContext,
                 note.midi,
                 startTime,
-                remainingDuration /
-                playbackRate,
+                remainingDuration / playbackRate,
+                instrument,
             );
         }
     }
@@ -82,56 +75,116 @@ export class MusicPlayer {
         this.oscillators = [];
     }
 
+    private decibelsToGain(
+        decibels: number,
+    ): number {
+        return 10 ** (decibels / 20);
+    }
+
     private scheduleNote(
         audioContext: AudioContext,
         midi: number,
         startTime: number,
         duration: number,
+        instrument: Instrument,
     ): void {
+        const profile =
+            INSTRUMENT_PROFILES[instrument];
+
+        const soundingMidi =
+            midi + profile.octaveOffset;
+
+        const frequency =
+            440 *
+            2 ** ((soundingMidi - 69) / 12);
+
         const oscillator =
             audioContext.createOscillator();
 
         const gain =
             audioContext.createGain();
 
-        const frequency =
-            440 *
-            2 ** ((midi - 69) / 12);
-
-        oscillator.type = "sine";
+        oscillator.type =
+            profile.oscillator.type;
 
         oscillator.frequency.setValueAtTime(
             frequency,
             startTime,
         );
 
-        const attackDuration =
-            Math.min(0.005, duration / 2);
+        const peakGain =
+            this.decibelsToGain(
+                profile.volume,
+            );
 
-        const releaseDuration =
-            Math.min(0.01, duration / 2);
+        const {
+            attack,
+            decay,
+            sustain,
+            release,
+        } = profile.envelope;
+
+        /*
+         * On adapte attack + decay aux notes
+         * éventuellement très courtes.
+         */
+        const attackDuration =
+            Math.min(
+                attack,
+                duration * 0.25,
+            );
+
+        const decayDuration =
+            Math.min(
+                decay,
+                duration * 0.25,
+            );
+
+        const noteOffTime =
+            startTime + duration;
+
+        const attackEnd =
+            startTime + attackDuration;
+
+        const decayEnd =
+            Math.min(
+                attackEnd + decayDuration,
+                noteOffTime,
+            );
+
+        const sustainGain =
+            Math.max(
+                0.0001,
+                peakGain * sustain,
+            );
 
         const endTime =
-            startTime + duration;
+            noteOffTime + release;
 
         gain.gain.setValueAtTime(
             0.0001,
             startTime,
         );
 
+        // Attack
         gain.gain.exponentialRampToValueAtTime(
-            0.15,
-            startTime + attackDuration,
+            peakGain,
+            attackEnd,
         );
 
+        // Decay
+        gain.gain.exponentialRampToValueAtTime(
+            sustainGain,
+            decayEnd,
+        );
+
+        // Sustain
         gain.gain.setValueAtTime(
-            0.15,
-            Math.max(
-                startTime + attackDuration,
-                endTime - releaseDuration,
-            ),
+            sustainGain,
+            noteOffTime,
         );
 
+        // Release
         gain.gain.exponentialRampToValueAtTime(
             0.0001,
             endTime,
