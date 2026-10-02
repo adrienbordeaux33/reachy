@@ -386,6 +386,8 @@ export default function SongPianoHero({
             if (state.status === "finished" && !hasFinishedRef.current) {
                 hasFinishedRef.current = true;
 
+                console.log("FINISHED STATE:", state);
+
                 playerRef.current?.stop();
 
                 setIsPlaying(false);
@@ -407,7 +409,7 @@ export default function SongPianoHero({
         return () => {
             cancelAnimationFrame(frameId);
         };
-    }, [getSongTime, syncGameState, onFinished, engine]);
+    }, [getSongTime, syncGameState, onFinished, engine, playMode]);
     useEffect(() => {
         const audioContext = audioContextRef.current;
 

@@ -274,6 +274,9 @@ function GamePage() {
                     <EndGamePopup
                         playMode={playMode}
                         score={gameResult.score}
+                        hits={gameResult.hits}
+                        misses={gameResult.misses}
+                        wrongHits={gameResult.wrongHits}
                         successRate={successRate}
                         onRestart={handleRestart}
                         onQuit={() => navigate("/")}
