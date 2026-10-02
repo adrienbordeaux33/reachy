@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
-
+import type { ReachyRobotAction } from "../ReachyRobot/ReachyRobot";
 import PianoCanvas from "../canvas/PianoCanvas";
-
+import type { Instrument } from "../../audio/Instrument.ts";
 import { TxtMusicParser } from "../../music/parsers/TxtMusicParser";
 import { BeatmapGenerator } from "../../game/beatmap/BeatmapGenerator";
 import {
@@ -13,6 +13,7 @@ import { GameClock } from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
 import type { PlayMode } from "../../game/model/PlayMode.ts";
+import { MidiMusicParser } from "../../music/parsers/MidiMusicParser.ts";
 
 const MIN_PLAYBACK_RATE = 0.25;
 const MAX_PLAYBACK_RATE = 2;
@@ -25,14 +26,19 @@ export interface SongGameResult {
     wrongHits: number;
 }
 
+type SongFormat = "txt" | "midi";
+
 interface SongPianoHeroProps {
-    songSource: string;
+    songSource: string | ArrayBuffer;
     tempo: number;
+    songFormat: SongFormat;
+    instrument?: Instrument;
     isPaused?: boolean;
     playMode: "listen" | "play";
     restartKey?: number;
     onFinished: (result: SongGameResult) => void;
     onStarted?: () => void;
+    onRobotEvent?: (action: ReachyRobotAction) => void;
 }
 
 const EMPTY_PRESSED_NOTES = new Set<number>();
@@ -41,19 +47,34 @@ const LEAD_IN = NOTE_TRAVEL_TIME;
 
 export default function SongPianoHero({
     songSource,
+    songFormat,
+    instrument,
     tempo,
     isPaused,
     playMode,
     restartKey,
     onFinished,
     onStarted,
+    onRobotEvent,
 }: SongPianoHeroProps) {
     const { song, engine, timeline } = useMemo(() => {
-        const parser = new TxtMusicParser();
+        const song = (() => {
+            if (songFormat === "txt") {
+                if (typeof songSource !== "string") {
+                    throw new Error("Source TXT invalide.");
+                }
+
+                return new TxtMusicParser().parse(songSource);
+            }
+
+            if (!(songSource instanceof ArrayBuffer)) {
+                throw new Error("Source MIDI invalide.");
+            }
+
+            return new MidiMusicParser().parse(songSource);
+        })();
 
         const beatmapGenerator = new BeatmapGenerator();
-
-        const song = parser.parse(songSource);
 
         const beatmap = beatmapGenerator.generate(song);
 
@@ -71,7 +92,7 @@ export default function SongPianoHero({
             engine,
             timeline,
         };
-    }, [songSource]);
+    }, [songSource, songFormat]);
 
     const playbackRate = Math.min(
         MAX_PLAYBACK_RATE,
@@ -104,6 +125,7 @@ export default function SongPianoHero({
 
     const [feedback, setFeedback] = useState<GameFeedback>(null);
     const feedbackIdRef = useRef(0);
+    const consecutiveMissesRef = useRef(0);
 
     const hasFinishedRef = useRef(false);
 
@@ -180,10 +202,31 @@ export default function SongPianoHero({
                 setFeedback(nextFeedback);
             }
         }
+        if (next.status === "playing" && previous.status !== "playing") {
+            consecutiveMissesRef.current = 0;
+        }
+
+        if (next.misses > previous.misses) {
+            const previousMissStreak = consecutiveMissesRef.current;
+
+            consecutiveMissesRef.current += next.misses - previous.misses;
+
+            if (previousMissStreak < 5 && consecutiveMissesRef.current >= 5) {
+                onRobotEvent?.("five-missed");
+            }
+        }
+
+        if (next.hits > previous.hits) {
+            consecutiveMissesRef.current = 0;
+
+            if (next.combo === 3) {
+                onRobotEvent?.("three-success");
+            }
+        }
         lastUiStateRef.current = snapshot;
 
         setGameState(snapshot);
-    }, [engine, playMode]);
+    }, [engine, playMode, onRobotEvent]);
 
     /**
      * Lance/recommence le morceau.
@@ -214,8 +257,14 @@ export default function SongPianoHero({
         engine.restart();
         syncGameState();
 
-        player.play(song, audioContext, songStartTime, playbackRate, 0);
-
+        player.play(
+            song,
+            audioContext,
+            songStartTime,
+            playbackRate,
+            0,
+            instrument,
+        );
         clockRef.current.start(audioContext, gameStartTime);
 
         clockRef.current.setPlaybackRate(playbackRate);
@@ -223,7 +272,7 @@ export default function SongPianoHero({
         setPressedNotes(new Set());
         setIsPlaying(true);
         onStarted?.();
-    }, [engine, song, syncGameState, playbackRate, onStarted]);
+    }, [engine, song, syncGameState, playbackRate, instrument, onStarted]);
 
     useEffect(() => {
         const clock = clockRef.current;

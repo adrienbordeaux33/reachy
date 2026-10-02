@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import type { Instrument } from "../audio/Instrument.ts";
 import { Chrono } from "../components/Chrono";
 import { FreeModePauseMenu } from "../components/FreeModePauseMenu";
-import type { Instrument } from "../components/InstrumentSelector";
 import PianoHero from "../components/PianoHero";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
 

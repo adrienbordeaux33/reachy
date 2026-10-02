@@ -8,9 +8,9 @@ export type SongId =
 export interface SongDefinition {
     id: SongId;
     title: string;
+    format: "txt";
     source: string;
 }
-
 export const SONG_LIBRARY: Record<
     SongId,
     SongDefinition
@@ -18,12 +18,14 @@ export const SONG_LIBRARY: Record<
     mario: {
         id: "mario",
         title: "Mario",
+        format: "txt",
         source: marioTxt,
     },
 
     pirate: {
         id: "pirate",
         title: "Pirates des caraïbes",
+        format: "txt",
         source: pirateTxt,
     },
 };

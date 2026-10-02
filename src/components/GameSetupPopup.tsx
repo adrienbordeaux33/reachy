@@ -6,18 +6,21 @@ import { NeonDecoration } from "./NeonDecoration";
 import { MusicIcon, PlayIcon, SlidersIcon } from "./icons.tsx";
 
 import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
-import type { MusicSong } from "../music/model/MusicSong";
 import { SONG_LIBRARY, type SongId } from "../music/library/SongLibrary.ts";
+import type {Instrument} from "../audio/Instrument.ts";
+import type {UploadedSong} from "../music/model/UploadedSong.ts";
+import {MidiMusicParser} from "../music/parsers/MidiMusicParser.ts";
 
 type MusicMode = "upload" | "library" | "free";
-type Instrument = "piano" | "guitar" | "bass";
+
+
 
 interface GameSetupPopupProps {
     onStart: (
         musicMode: MusicMode,
         instrument: Instrument,
         songId?: SongId,
-        uploadedSong?: MusicSong,
+        uploadedSong?: UploadedSong,
     ) => void;
     onClose: () => void;
 }
@@ -26,27 +29,74 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     const [musicMode, setMusicMode] = useState<MusicMode>("upload");
     const [songId, setSongId] = useState<SongId>("mario");
     const [instrument, setInstrument] = useState<Instrument>("piano");
-    const [uploadedSong, setUploadedSong] = useState<MusicSong | null>(null);
+    const [uploadedSong, setUploadedSong] = useState<UploadedSong | null>(null);
 
-    const handleUploadedFile = async (file: File | null) => {
+    const handleUploadedFile = async (
+        file: File | null,
+    ) => {
         setUploadedSong(null);
 
         if (!file) return;
 
         try {
-            const content = await file.text();
+            const title = file.name.replace(
+                /\.(txt|mid|midi)$/i,
+                "",
+            );
 
-            const parser = new TxtMusicParser();
-            const song = parser.parse(content);
+            const extension =
+                file.name
+                    .split(".")
+                    .pop()
+                    ?.toLowerCase();
 
-            setUploadedSong({
-                ...song,
-                title: file.name.replace(/\.txt$/i, ""),
-            });
+            if (extension === "txt") {
+                const source = await file.text();
 
-            console.log("Morceau chargé :", song);
+                // Validation
+                const parser = new TxtMusicParser();
+                parser.parse(source);
+
+                setUploadedSong({
+                    id: crypto.randomUUID(),
+                    title,
+                    format: "txt",
+                    source,
+                });
+
+                return;
+            }
+
+            if (extension === "mid" || extension === "midi") {
+                const source =
+                    await file.arrayBuffer();
+
+                // Validation
+                const parser =
+                    new MidiMusicParser();
+
+                parser.parse(source);
+
+                setUploadedSong({
+                    id: crypto.randomUUID(),
+                    title,
+                    format: "midi",
+                    source,
+                });
+
+                return;
+            }
+
+            throw new Error(
+                "Format de fichier non pris en charge.",
+            );
         } catch (error) {
-            console.error("Impossible de charger le morceau :", error);
+            console.error(
+                "Impossible de charger le morceau :",
+                error,
+            );
+
+            setUploadedSong(null);
         }
     };
 
@@ -152,29 +202,13 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                 <div className="grid gap-5 md:grid-cols-3">
                                     <input
                                         type="file"
-                                        accept=".txt,text/plain"
+                                        accept=".txt,text/plain,.mid,.midi"
                                         onChange={(event) => {
                                             const file =
                                                 event.target.files?.[0] ?? null;
                                             void handleUploadedFile(file);
                                         }}
-                                        className="
-                      w-full rounded-xl
-                      border border-cyan-400/40
-                      bg-slate-950/80
-                      px-4 py-3
-                      text-sm text-white
-                      outline-none
-                      file:mr-4
-                      file:rounded-lg
-                      file:border-0
-                      file:bg-cyan-400/15
-                      file:px-3
-                      file:py-2
-                      file:font-semibold
-                      file:text-cyan-200
-                      hover:file:bg-cyan-400/25
-                    "
+                                        className="w-full rounded-xl border border-cyan-400/40 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-400/15 file:px-3 file:py-2 file:font-semibold file:text-cyan-200 hover:file:bg-cyan-400/25"
                                     />
                                 </div>
                             )}
