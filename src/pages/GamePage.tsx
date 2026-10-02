@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import type { Instrument } from "../audio/Instrument.ts";
 import type { PlayMode } from "../game/model/PlayMode.ts";
 import { getSongDefinition, type SongId } from "../music/library/SongLibrary";
 import type { UploadedSong } from "../music/model/UploadedSong.ts";
+
 import { EndGamePopup } from "../components/EndGamePopup";
 import { PauseMenu } from "../components/PauseMenu";
 import {
@@ -38,12 +40,14 @@ interface WidgetDrag {
 function GamePage() {
     const location = useLocation();
     const navigate = useNavigate();
+
     const {
         musicMode,
         instrument: initialInstrument,
         songId,
         uploadedSong,
     } = (location.state as GameState) ?? {};
+
     const selectedSong =
         musicMode === "upload" && uploadedSong
             ? uploadedSong
@@ -61,10 +65,13 @@ function GamePage() {
     const [restartKey, setRestartKey] = useState(0);
     const [resetKey, setResetKey] = useState(0);
     const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
+
     const [robotAction, setRobotAction] =
         useState<ReachyRobotActionEvent | null>(null);
+
     const [reachyWidgetPosition, setReachyWidgetPosition] =
         useState<WidgetPosition | null>(null);
+
     const robotActionIdRef = useRef(0);
     const reachyWidgetRef = useRef<HTMLElement | null>(null);
     const widgetDragRef = useRef<WidgetDrag | null>(null);
@@ -72,6 +79,7 @@ function GamePage() {
     const totalAttempts = gameResult
         ? gameResult.hits + gameResult.misses + gameResult.wrongHits
         : 0;
+
     const successRate =
         gameResult === null || totalAttempts === 0
             ? 0
@@ -79,16 +87,38 @@ function GamePage() {
 
     const handleRobotEvent = useCallback((action: ReachyRobotAction) => {
         robotActionIdRef.current += 1;
+
         setRobotAction({
             id: `game-${robotActionIdRef.current}`,
             action,
         });
     }, []);
 
-    const handleGameFinished = useCallback((result: SongGameResult) => {
-        setGameResult(result);
-        setHasStarted(false);
-    }, []);
+    const handleGameFinished = useCallback(
+        (result: SongGameResult) => {
+            setGameResult(result);
+            setHasStarted(false);
+
+            if (result.mode !== "play") return;
+
+            const attempts = result.hits + result.misses + result.wrongHits;
+
+            handleRobotEvent(
+                attempts > 0 && result.hits / attempts > 0.5
+                    ? "success"
+                    : "failure",
+            );
+        },
+        [handleRobotEvent],
+    );
+
+    const handleGameStarted = useCallback(() => {
+        setHasStarted(true);
+
+        if (playMode === "play") {
+            handleRobotEvent("dance-start");
+        }
+    }, [handleRobotEvent, playMode]);
 
     const handleRestart = () => {
         setGameResult(null);
@@ -114,6 +144,7 @@ function GamePage() {
         setHasStarted(false);
         setResetKey((value) => value + 1);
     };
+
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             if (event.code !== "Space" || gameResult !== null) return;
@@ -134,8 +165,10 @@ function GamePage() {
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [hasStarted, gameResult]);
+
     const handleWidgetPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
         const target = event.target;
+
         if (
             !(target instanceof HTMLElement) ||
             !target.closest(".reachy-robot__header") ||
@@ -148,12 +181,18 @@ function GamePage() {
         if (!widget) return;
 
         const bounds = widget.getBoundingClientRect();
+
         widgetDragRef.current = {
             pointerId: event.pointerId,
             offsetX: event.clientX - bounds.left,
             offsetY: event.clientY - bounds.top,
         };
-        setReachyWidgetPosition({ left: bounds.left, top: bounds.top });
+
+        setReachyWidgetPosition({
+            left: bounds.left,
+            top: bounds.top,
+        });
+
         event.currentTarget.setPointerCapture(event.pointerId);
         event.preventDefault();
     };
@@ -161,6 +200,7 @@ function GamePage() {
     const handleWidgetPointerMove = (event: ReactPointerEvent<HTMLElement>) => {
         const drag = widgetDragRef.current;
         const widget = reachyWidgetRef.current;
+
         if (!drag || drag.pointerId !== event.pointerId || !widget) return;
 
         const bounds = widget.getBoundingClientRect();
@@ -177,6 +217,7 @@ function GamePage() {
         if (widgetDragRef.current?.pointerId !== event.pointerId) return;
 
         widgetDragRef.current = null;
+
         if (event.currentTarget.hasPointerCapture(event.pointerId)) {
             event.currentTarget.releasePointerCapture(event.pointerId);
         }
@@ -197,7 +238,7 @@ function GamePage() {
                 resetKey={resetKey}
                 onFinished={handleGameFinished}
                 onRobotEvent={handleRobotEvent}
-                onStarted={() => setHasStarted(true)}
+                onStarted={handleGameStarted}
             />
 
             <MediaPlayer

@@ -1,18 +1,14 @@
 import type { Beatmap } from "../model/BeatMap.ts";
 import type { GameNote } from "../model/GameNote.ts";
 
-import {calculateHitScore} from "../scoring/scoreCalculator";
+import { calculateHitScore } from "../scoring/scoreCalculator";
 
 import type {
     GameEngine,
     GameState,
-    GameNoteStatus
+    GameNoteStatus, HitRating,
 } from "./GameEngine.ts";
 
-export type HitRating =
-    | "perfect"
-    | "great"
-    | "good";
 
 export interface HitResult {
     note: GameNote;
@@ -39,12 +35,11 @@ const INITIAL_STATE: GameState = {
     combo: 0,
     hits: 0,
     misses: 0,
-    wrongHits: 0
+    wrongHits: 0,
+    lastHitRating: null,
 };
 
-export class DefaultGameEngine
-    implements GameEngine
-{
+export class DefaultGameEngine implements GameEngine {
     private beatmap: Beatmap | null = null;
 
     private state: GameState = {
@@ -65,7 +60,6 @@ export class DefaultGameEngine
 
     load(beatmap: Beatmap): void {
         this.beatmap = beatmap;
-
         this.resetState();
     }
 
@@ -118,11 +112,10 @@ export class DefaultGameEngine
             return;
         }
 
-        const result =
-            this.findHit(
-                midi,
-                currentTime,
-            );
+        const result = this.findHit(
+            midi,
+            currentTime,
+        );
 
         if (result === null) {
             this.state.wrongHits += 1;
@@ -131,21 +124,23 @@ export class DefaultGameEngine
             return;
         }
 
-        const earnedScore =
-            calculateHitScore(
-                result.rating,
-                this.state.combo,
-            );
+        const earnedScore = calculateHitScore(
+            result.rating,
+            this.state.combo,
+        );
 
         this.hitNoteIds.add(
             result.note.id,
         );
 
-        this.state.score +=
-            earnedScore;
+        this.state.score += earnedScore;
 
         this.state.hits += 1;
         this.state.combo += 1;
+
+        // Permet à l'UI de savoir si le dernier hit
+        // était PERFECT, GREAT ou GOOD.
+        this.state.lastHitRating = result.rating;
 
         console.log(
             result.rating,
@@ -177,7 +172,9 @@ export class DefaultGameEngine
 
         this.detectMisses(currentTime);
 
-        const finishTime = this.beatmap.duration + this.config.goodWindow;
+        const finishTime =
+            this.beatmap.duration +
+            this.config.goodWindow;
 
         if (currentTime >= finishTime) {
             this.state.status = "finished";
@@ -196,15 +193,11 @@ export class DefaultGameEngine
             return null;
         }
 
-        let bestNote: GameNote | null =
-            null;
+        let bestNote: GameNote | null = null;
 
         let bestTimingError = Infinity;
 
-        for (
-            const note
-            of this.beatmap.notes
-            ) {
+        for (const note of this.beatmap.notes) {
             if (note.midi !== midi) {
                 continue;
             }
@@ -245,8 +238,7 @@ export class DefaultGameEngine
             rating: this.getRating(
                 Math.abs(bestTimingError),
             ),
-            timingError:
-            bestTimingError,
+            timingError: bestTimingError,
         };
     }
 
@@ -257,10 +249,7 @@ export class DefaultGameEngine
             return;
         }
 
-        for (
-            const note
-            of this.beatmap.notes
-            ) {
+        for (const note of this.beatmap.notes) {
             if (this.isResolved(note.id)) {
                 continue;
             }

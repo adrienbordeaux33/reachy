@@ -1,4 +1,4 @@
-import type { HitRating } from "../engine/DefaultGameEngine";
+import type { HitRating } from "../engine/GameEngine";
 
 const BASE_SCORE: Record<HitRating, number> = {
     perfect: 1000,
@@ -6,9 +6,7 @@ const BASE_SCORE: Record<HitRating, number> = {
     good: 400,
 };
 
-export function getComboMultiplier(
-    combo: number,
-): number {
+export function getComboMultiplier(combo: number): number {
     if (combo >= 30) {
         return 4;
     }
@@ -24,15 +22,10 @@ export function getComboMultiplier(
     return 1;
 }
 
-export function calculateHitScore(
-    rating: HitRating,
-    combo: number,
-): number {
-    const baseScore =
-        BASE_SCORE[rating];
+export function calculateHitScore(rating: HitRating, combo: number): number {
+    const baseScore = BASE_SCORE[rating];
 
-    const multiplier =
-        getComboMultiplier(combo);
+    const multiplier = getComboMultiplier(combo);
 
     return baseScore * multiplier;
 }

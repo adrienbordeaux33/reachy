@@ -150,6 +150,7 @@ export function ReachyRobot({
   const [isSimulation, setIsSimulation] = useState(false);
   const [simulatorStatus, setSimulatorStatus] =
     useState<SimulatorStatus>("disconnected");
+  const [isDanceActive, setIsDanceActive] = useState(false);
   const [displayedAction, setDisplayedAction] =
     useState<ReachyRobotActionEvent | null>(null);
   const [testActionId, setTestActionId] = useState(0);
@@ -249,6 +250,7 @@ export function ReachyRobot({
         if (loop.generation === generation) {
           loop.active = false;
           loop.simulatorMoveUuid = null;
+          setIsDanceActive(false);
           setSimulatorStatus("error");
           setMessage(
             error instanceof Error
@@ -273,6 +275,7 @@ export function ReachyRobot({
       const sent = playRobotMove(robot, DANCE_MOVE);
       if (!sent) {
         loop.active = false;
+        setIsDanceActive(false);
         setMessage("La danse n’a pas pu être envoyée au robot.");
         return;
       }
@@ -334,6 +337,7 @@ export function ReachyRobot({
     const loop = danceLoopRef.current;
     loop.active = false;
     loop.generation += 1;
+    setIsDanceActive(false);
     if (loop.timer !== null) clearTimeout(loop.timer);
     loop.timer = null;
     loop.robotMoveRequested = false;
@@ -448,11 +452,13 @@ export function ReachyRobot({
   const dispatchReaction = useCallback(
     (event: ReachyRobotActionEvent) => {
       if (event.action === "dance-start") {
+        setIsDanceActive(true);
         setDisplayedAction(event);
         startDance();
         return;
       }
       if (event.action === "dance-stop") {
+        setIsDanceActive(false);
         setDisplayedAction(event);
         void stopDance();
         return;
@@ -502,7 +508,7 @@ export function ReachyRobot({
     enqueueReaction(reactionQueueRef.current, currentAction, dispatchReaction);
   }, [action, dispatchReaction]);
 
-  const runTestAction = (nextAction: ReactionAction) => {
+  const runTestAction = (nextAction: ReachyRobotAction) => {
     const id = testActionId + 1;
     setTestActionId(id);
     enqueueReaction(
@@ -792,6 +798,20 @@ export function ReachyRobot({
                 </button>
               ),
             )}
+            <button
+              type="button"
+              aria-pressed={isDanceActive}
+              disabled={
+                isSimulation
+                  ? simulatorStatus !== "connected"
+                  : status !== "streaming"
+              }
+              onClick={() =>
+                runTestAction(isDanceActive ? "dance-stop" : "dance-start")
+              }
+            >
+              {isDanceActive ? "Arrêter la danse" : "Tester la danse"}
+            </button>
           </div>
         </div>
       )}

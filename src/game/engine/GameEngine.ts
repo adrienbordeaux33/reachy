@@ -1,5 +1,6 @@
 import type {Beatmap} from "../model/BeatMap.ts";
 
+
 export type GameStatus =
     | "idle"
     | "playing"
@@ -11,6 +12,11 @@ export type GameNoteStatus =
     | "hit"
     | "missed";
 
+
+export type HitRating =
+    | "perfect"
+    | "great"
+    | "good";
 
 export interface GameState {
     status: GameStatus;
@@ -26,6 +32,8 @@ export interface GameState {
     misses: number;
 
     wrongHits: number;
+
+    lastHitRating: HitRating | null;
 }
 
 
