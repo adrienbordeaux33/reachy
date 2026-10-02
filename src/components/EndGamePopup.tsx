@@ -1,21 +1,38 @@
 import concertBackground from "../assets/fond.png";
-import type {PlayMode} from "../game/model/PlayMode.ts";
+import type { PlayMode } from "../game/model/PlayMode.ts";
 
 interface EndGamePopupProps {
     playMode: PlayMode;
     score?: number;
     successRate?: number;
+    hits?: number;
+    misses?: number;
+    wrongHits?: number;
     onRestart?: () => void;
     onQuit?: () => void;
 }
 
 export function EndGamePopup({
     playMode,
-    score = 236,
-    successRate = 85,
+    score = 0,
+    successRate = 0,
+    hits = 0,
+    misses = 0,
+    wrongHits = 0,
     onRestart = () => {},
     onQuit = () => {},
 }: EndGamePopupProps) {
+    const performance =
+        successRate === 100
+            ? "PERFECT !"
+            : successRate >= 90
+              ? "EXCELLENT !"
+              : successRate >= 75
+                ? "SUPER !"
+                : successRate >= 50
+                  ? "BIEN JOUÉ !"
+                  : "CONTINUE !";
+
     return (
         <main className="relative isolate min-h-screen overflow-hidden text-white">
             {/* Background */}
@@ -70,32 +87,90 @@ export function EndGamePopup({
 
                             <div className="mx-auto mt-1 h-2 max-w-xl -rotate-2 rounded-full bg-gradient-to-r from-fuchsia-500 via-violet-500 to-cyan-400 opacity-95" />
                         </div>
-
-                        {/* Stats */}
+                        {/* Résultats */}
                         {playMode === "play" && (
-                            <div className="mx-auto mt-10 flex max-w-2xl flex-col items-center justify-center gap-5 text-center sm:flex-row sm:gap-8">
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                                            Score :
-                                        </span>
-                                        <span className="text-3xl font-black text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.45)] sm:text-4xl">
-                                            {score}
-                                        </span>
+                            <div className="mx-auto mt-7 max-w-3xl">
+                                {/* SCORE + PRÉCISION */}
+                                <div className="flex items-center justify-center gap-10">
+                                    {/* SCORE */}
+                                    <div className="text-center">
+                                        <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-cyan-200/50">
+                                            Score final
+                                        </div>
+
+                                        <div className="result-pop mt-1 text-5xl font-black text-cyan-300 drop-shadow-[0_0_18px_rgba(34,211,238,.65)]">
+                                            {score.toLocaleString()}
+                                        </div>
+
+                                        <div className="mt-2 text-lg font-black italic tracking-wide text-fuchsia-300 drop-shadow-[0_0_10px_rgba(217,70,239,.45)]">
+                                            {performance}
+                                        </div>
                                     </div>
 
-                                    <div className="hidden h-10 w-px bg-gradient-to-b from-transparent via-fuchsia-400/80 to-transparent sm:block" />
+                                    {/* ANNEAU RÉUSSITE */}
+                                    <div
+                                        className="result-pop relative grid h-32 w-32 shrink-0 place-items-center rounded-full p-[7px]
+                           shadow-[0_0_30px_rgba(217,70,239,.22)]"
+                                        style={{
+                                            background: `conic-gradient(
+                        rgb(34 211 238) 0%,
+                        rgb(217 70 239) ${successRate}%,
+                        rgba(255,255,255,.08) ${successRate}%,
+                        rgba(255,255,255,.08) 100%
+                    )`,
+                                        }}
+                                    >
+                                        <div className="grid h-full w-full place-items-center rounded-full border border-white/10 bg-slate-950/95">
+                                            <div className="text-center">
+                                                <div className="text-3xl font-black text-white">
+                                                    {successRate}%
+                                                </div>
 
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="text-lg font-extrabold uppercase tracking-wide text-slate-100 sm:text-xl">
-                                            Réussite :
-                                        </span>
-                                        <span className="text-3xl font-black text-fuchsia-300 drop-shadow-[0_0_12px_rgba(217,70,239,.45)] sm:text-4xl">
-                                            {successRate} %
-                                        </span>
+                                                <div className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/40">
+                                                    Réussite
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            )}
 
+                                {/* DÉTAIL DES PERFORMANCES */}
+                                <div className="mx-auto mt-7 grid max-w-xl grid-cols-3 gap-3">
+                                    {/* HITS */}
+                                    <div className="rounded-2xl border border-emerald-400/25 bg-emerald-400/5 px-4 py-3 text-center backdrop-blur-md">
+                                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-emerald-200/50">
+                                            Hits
+                                        </div>
+
+                                        <div className="mt-1 text-2xl font-black text-emerald-300 drop-shadow-[0_0_10px_rgba(110,231,183,.35)]">
+                                            {hits}
+                                        </div>
+                                    </div>
+
+                                    {/* MISS */}
+                                    <div className="rounded-2xl border border-rose-400/25 bg-rose-400/5 px-4 py-3 text-center backdrop-blur-md">
+                                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-rose-200/50">
+                                            Miss
+                                        </div>
+
+                                        <div className="mt-1 text-2xl font-black text-rose-300 drop-shadow-[0_0_10px_rgba(251,113,133,.35)]">
+                                            {misses}
+                                        </div>
+                                    </div>
+
+                                    {/* WRONG */}
+                                    <div className="rounded-2xl border border-amber-400/25 bg-amber-400/5 px-4 py-3 text-center backdrop-blur-md">
+                                        <div className="text-[9px] font-bold uppercase tracking-[0.2em] text-amber-200/50">
+                                            Fausses notes
+                                        </div>
+
+                                        <div className="mt-1 text-2xl font-black text-amber-300 drop-shadow-[0_0_10px_rgba(251,191,36,.35)]">
+                                            {wrongHits}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                         {/* Actions */}
                         <div className="mx-auto mt-10 grid max-w-3xl gap-5 md:grid-cols-2">
                             <button

@@ -7,13 +7,11 @@ import { MusicIcon, PlayIcon, SlidersIcon } from "./icons.tsx";
 
 import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
 import { SONG_LIBRARY, type SongId } from "../music/library/SongLibrary.ts";
-import type {Instrument} from "../audio/Instrument.ts";
-import type {UploadedSong} from "../music/model/UploadedSong.ts";
-import {MidiMusicParser} from "../music/parsers/MidiMusicParser.ts";
+import type { Instrument } from "../audio/Instrument.ts";
+import type { UploadedSong } from "../music/model/UploadedSong.ts";
+import { MidiMusicParser } from "../music/parsers/MidiMusicParser.ts";
 
 type MusicMode = "upload" | "library" | "free";
-
-
 
 interface GameSetupPopupProps {
     onStart: (
@@ -30,25 +28,16 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     const [songId, setSongId] = useState<SongId>("mario");
     const [instrument, setInstrument] = useState<Instrument>("piano");
     const [uploadedSong, setUploadedSong] = useState<UploadedSong | null>(null);
-
-    const handleUploadedFile = async (
-        file: File | null,
-    ) => {
+    const canStart = musicMode !== "upload" || uploadedSong !== null;
+    const handleUploadedFile = async (file: File | null) => {
         setUploadedSong(null);
 
         if (!file) return;
 
         try {
-            const title = file.name.replace(
-                /\.(txt|mid|midi)$/i,
-                "",
-            );
+            const title = file.name.replace(/\.(txt|mid|midi)$/i, "");
 
-            const extension =
-                file.name
-                    .split(".")
-                    .pop()
-                    ?.toLowerCase();
+            const extension = file.name.split(".").pop()?.toLowerCase();
 
             if (extension === "txt") {
                 const source = await file.text();
@@ -68,12 +57,10 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
             }
 
             if (extension === "mid" || extension === "midi") {
-                const source =
-                    await file.arrayBuffer();
+                const source = await file.arrayBuffer();
 
                 // Validation
-                const parser =
-                    new MidiMusicParser();
+                const parser = new MidiMusicParser();
 
                 parser.parse(source);
 
@@ -87,14 +74,9 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                 return;
             }
 
-            throw new Error(
-                "Format de fichier non pris en charge.",
-            );
+            throw new Error("Format de fichier non pris en charge.");
         } catch (error) {
-            console.error(
-                "Impossible de charger le morceau :",
-                error,
-            );
+            console.error("Impossible de charger le morceau :", error);
 
             setUploadedSong(null);
         }
@@ -270,6 +252,7 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                         <div className="mt-10 flex justify-center">
                             <button
                                 type="button"
+                                disabled={!canStart}
                                 onClick={() =>
                                     onStart(
                                         musicMode,
@@ -301,6 +284,11 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                   focus:outline-none
                   focus-visible:ring-2
                   focus-visible:ring-white
+                  disabled:cursor-not-allowed
+disabled:opacity-40
+disabled:hover:translate-y-0
+disabled:hover:bg-emerald-950/40
+disabled:hover:shadow-[0_0_28px_rgba(52,211,153,.36)]
                 "
                             >
                                 <PlayIcon />
