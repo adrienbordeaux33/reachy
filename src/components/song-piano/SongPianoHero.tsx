@@ -59,6 +59,7 @@ export default function SongPianoHero({
     onStarted,
     onRobotEvent,
 }: SongPianoHeroProps) {
+
     const { song, engine, timeline } = useMemo(() => {
         const song = (() => {
             if (songFormat === "txt") {
@@ -121,7 +122,13 @@ export default function SongPianoHero({
 
     type GameFeedback = {
         id: number;
-        type: "hit" | "wrong" | "miss" | "combo";
+        type:
+            | "perfect"
+            | "great"
+            | "good"
+            | "wrong"
+            | "miss"
+            | "combo";
         label: string;
         icon: string;
     } | null;
@@ -135,7 +142,7 @@ export default function SongPianoHero({
     const previousRestartKeyRef = useRef(restartKey);
     const previousResetKeyRef = useRef(resetKey);
 
-    const lastUiStateRef = useRef(engine.getState());
+    const lastUiStateRef = useRef({...engine.getState()});
 
     const getSongTime = useCallback(() => {
         return clockRef.current.getCurrentTime() - LEAD_IN;
@@ -192,14 +199,50 @@ export default function SongPianoHero({
                     icon: "✕",
                 };
             } else if (next.hits > previous.hits) {
-                const isComboMoment = next.combo >= 5 && next.combo % 5 === 0;
+                const isComboMoment =
+                    next.combo >= 5 &&
+                    next.combo % 5 === 0;
 
-                nextFeedback = {
-                    id: ++feedbackIdRef.current,
-                    type: isComboMoment ? "combo" : "hit",
-                    label: isComboMoment ? `COMBO ×${next.combo}` : "PERFECT!",
-                    icon: isComboMoment ? "🔥" : "★",
-                };
+                if (isComboMoment) {
+                    nextFeedback = {
+                        id: ++feedbackIdRef.current,
+                        type: "combo",
+                        label: `COMBO ×${next.combo}`,
+                        icon: "🔥",
+                    };
+                } else {
+                    switch (next.lastHitRating) {
+                        case "perfect":
+                            nextFeedback = {
+                                id: ++feedbackIdRef.current,
+                                type: "perfect",
+                                label: "PERFECT!",
+                                icon: "★",
+                            };
+                            break;
+
+                        case "great":
+                            nextFeedback = {
+                                id: ++feedbackIdRef.current,
+                                type: "great",
+                                label: "GREAT!",
+                                icon: "✦",
+                            };
+                            break;
+
+                        case "good":
+                            nextFeedback = {
+                                id: ++feedbackIdRef.current,
+                                type: "good",
+                                label: "GOOD!",
+                                icon: "◆",
+                            };
+                            break;
+
+                        default:
+                            break;
+                    }
+                }
             }
 
             if (nextFeedback !== null) {
