@@ -6,18 +6,20 @@ import { NeonDecoration } from "./NeonDecoration";
 import { MusicIcon, PlayIcon, SlidersIcon } from "./icons.tsx";
 
 import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
-import type { MusicSong } from "../music/model/MusicSong";
 import { SONG_LIBRARY, type SongId } from "../music/library/SongLibrary.ts";
+import type {Instrument} from "../audio/Instrument.ts";
+import type {UploadedSong} from "../music/model/UploadedSong.ts";
 
 type MusicMode = "upload" | "library" | "free";
-type Instrument = "piano" | "guitar" | "bass";
+
+
 
 interface GameSetupPopupProps {
     onStart: (
         musicMode: MusicMode,
         instrument: Instrument,
         songId?: SongId,
-        uploadedSong?: MusicSong,
+        uploadedSong?: UploadedSong,
     ) => void;
     onClose: () => void;
 }
@@ -26,9 +28,11 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
     const [musicMode, setMusicMode] = useState<MusicMode>("upload");
     const [songId, setSongId] = useState<SongId>("mario");
     const [instrument, setInstrument] = useState<Instrument>("piano");
-    const [uploadedSong, setUploadedSong] = useState<MusicSong | null>(null);
+    const [uploadedSong, setUploadedSong] = useState<UploadedSong | null>(null);
 
-    const handleUploadedFile = async (file: File | null) => {
+    const handleUploadedFile = async (
+        file: File | null,
+    ) => {
         setUploadedSong(null);
 
         if (!file) return;
@@ -36,17 +40,24 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
         try {
             const content = await file.text();
 
+            // On parse uniquement pour vérifier
+            // que le fichier TXT est valide.
             const parser = new TxtMusicParser();
-            const song = parser.parse(content);
+            parser.parse(content);
 
             setUploadedSong({
-                ...song,
-                title: file.name.replace(/\.txt$/i, ""),
+                id: crypto.randomUUID(),
+                title: file.name.replace(
+                    /\.txt$/i,
+                    "",
+                ),
+                source: content,
             });
-
-            console.log("Morceau chargé :", song);
         } catch (error) {
-            console.error("Impossible de charger le morceau :", error);
+            console.error(
+                "Impossible de charger le morceau :",
+                error,
+            );
         }
     };
 
@@ -158,23 +169,7 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                                 event.target.files?.[0] ?? null;
                                             void handleUploadedFile(file);
                                         }}
-                                        className="
-                      w-full rounded-xl
-                      border border-cyan-400/40
-                      bg-slate-950/80
-                      px-4 py-3
-                      text-sm text-white
-                      outline-none
-                      file:mr-4
-                      file:rounded-lg
-                      file:border-0
-                      file:bg-cyan-400/15
-                      file:px-3
-                      file:py-2
-                      file:font-semibold
-                      file:text-cyan-200
-                      hover:file:bg-cyan-400/25
-                    "
+                                        className="w-full rounded-xl border border-cyan-400/40 bg-slate-950/80 px-4 py-3 text-sm text-white outline-none file:mr-4 file:rounded-lg file:border-0 file:bg-cyan-400/15 file:px-3 file:py-2 file:font-semibold file:text-cyan-200 hover:file:bg-cyan-400/25"
                                     />
                                 </div>
                             )}

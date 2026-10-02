@@ -8,11 +8,13 @@ import { EndGamePopup } from "../components/EndGamePopup";
 import {getSongDefinition, type SongId,} from "../music/library/SongLibrary";
 import type {PlayMode} from "../game/model/PlayMode.ts";
 import type {Instrument} from "../audio/Instrument.ts";
+import type {UploadedSong} from "../music/model/UploadedSong.ts";
 
 type GameState = {
     musicMode?: "upload" | "library";
     instrument?: Instrument;
     songId?: SongId;
+    uploadedSong?: UploadedSong
 };
 
 
@@ -22,9 +24,16 @@ function GamePage() {
 
     const { musicMode,
         instrument: initialInstrument,
-        songId } = (location.state as GameState) ?? {};
+        songId,
+        uploadedSong
+    } = (location.state as GameState) ?? {};
 
-    const selectedSong = getSongDefinition(songId ?? "mario");
+    const selectedSong =
+        musicMode === "upload" && uploadedSong
+            ? uploadedSong
+            : getSongDefinition(
+                songId ?? "mario",
+            );
 
     const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(initialInstrument ?? "piano");
     const [isInstrumentSelectorOpen, setIsInstrumentSelectorOpen] = useState(false);
