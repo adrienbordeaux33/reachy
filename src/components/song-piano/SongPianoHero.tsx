@@ -415,13 +415,9 @@ export default function SongPianoHero({songSource, tempo, instrument, isPaused, 
             audioContext.currentTime,
             playbackRate,
             songTime,
+            currentInstrumentRef.current
         );
-    }, [
-        playbackRate,
-        isPlaying,
-        song,
-        getSongTime,
-    ]);
+    }, [playbackRate, isPlaying, song, getSongTime]);
 
     useEffect(() => {
         const previousInstrument =
