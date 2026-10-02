@@ -7,10 +7,9 @@ import { MusicIcon, PlayIcon, SlidersIcon } from "./icons.tsx";
 
 import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
 import type { MusicSong } from "../music/model/MusicSong";
+import { SONG_LIBRARY, type SongId } from "../music/library/SongLibrary.ts";
 
 type MusicMode = "upload" | "library" | "free";
-
-type SongId = "mario" | "pirate";
 type Instrument = "piano" | "guitar" | "bass";
 
 interface GameSetupPopupProps {
@@ -201,10 +200,16 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                       focus:border-purple-300
                     "
                                     >
-                                        <option value="mario">Mario</option>
-                                        <option value="pirate">
-                                            Pirates des Caraïbes
-                                        </option>
+                                        {Object.values(SONG_LIBRARY).map(
+                                            (song) => (
+                                                <option
+                                                    key={song.id}
+                                                    value={song.id}
+                                                >
+                                                    {song.title}
+                                                </option>
+                                            ),
+                                        )}
                                     </select>
                                 </div>
                             )}

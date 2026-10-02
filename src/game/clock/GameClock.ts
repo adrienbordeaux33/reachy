@@ -1,9 +1,18 @@
 export class GameClock {
     private audioContext: AudioContext | null = null;
 
-    private startedAt = 0;
+    /**
+     * Position dans le temps logique/musical au dernier changement
+     * de référence.
+     */
+    private accumulatedTime = 0;
 
-    private pausedAt = 0;
+    /**
+     * audioContext.currentTime correspondant à accumulatedTime.
+     */
+    private referenceTime = 0;
+
+    private playbackRate = 1;
 
     private running = false;
 
@@ -14,8 +23,9 @@ export class GameClock {
         startedAt: number,
     ): void {
         this.audioContext = audioContext;
-        this.startedAt = startedAt;
-        this.pausedAt = 0;
+
+        this.accumulatedTime = 0;
+        this.referenceTime = startedAt;
 
         this.running = true;
         this.paused = false;
@@ -30,9 +40,10 @@ export class GameClock {
             return;
         }
 
-        this.pausedAt =
-            this.audioContext.currentTime -
-            this.startedAt;
+        // On mémorise la position musicale exacte
+        // atteinte au moment de la pause.
+        this.accumulatedTime =
+            this.getCurrentTime();
 
         this.paused = true;
     }
@@ -46,18 +57,50 @@ export class GameClock {
             return;
         }
 
-        this.startedAt =
-            this.audioContext.currentTime -
-            this.pausedAt;
+        // La position musicale ne change pas.
+        // On déplace seulement notre référence temps réel.
+        this.referenceTime =
+            this.audioContext.currentTime;
 
         this.paused = false;
+    }
+
+    setPlaybackRate(
+        playbackRate: number,
+    ): void {
+        if (playbackRate <= 0) {
+            throw new Error(
+                "playbackRate must be greater than 0",
+            );
+        }
+
+        if (
+            this.running &&
+            !this.paused &&
+            this.audioContext !== null
+        ) {
+            // Très important :
+            // sauvegarder la position musicale AVANT
+            // de changer le rate.
+            this.accumulatedTime =
+                this.getCurrentTime();
+
+            this.referenceTime =
+                this.audioContext.currentTime;
+        }
+
+        this.playbackRate = playbackRate;
+    }
+
+    getPlaybackRate(): number {
+        return this.playbackRate;
     }
 
     stop(): void {
         this.audioContext = null;
 
-        this.startedAt = 0;
-        this.pausedAt = 0;
+        this.accumulatedTime = 0;
+        this.referenceTime = 0;
 
         this.running = false;
         this.paused = false;
@@ -72,12 +115,17 @@ export class GameClock {
         }
 
         if (this.paused) {
-            return this.pausedAt;
+            return this.accumulatedTime;
         }
 
-        return (
+        const realElapsedTime =
             this.audioContext.currentTime -
-            this.startedAt
+            this.referenceTime;
+
+        return (
+            this.accumulatedTime +
+            realElapsedTime *
+            this.playbackRate
         );
     }
 }

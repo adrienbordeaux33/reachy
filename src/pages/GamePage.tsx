@@ -1,118 +1,134 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { PauseMenu } from "../components/PauseMenu";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
-import SongPianoHero, {
-  type SongGameResult,
-} from "../components/song-piano/SongPianoHero";
+import SongPianoHero, {type SongGameResult} from "../components/song-piano/SongPianoHero";
 import { EndGamePopup } from "../components/EndGamePopup";
+import {getSongDefinition, type SongId,} from "../music/library/SongLibrary";
+import type {PlayMode} from "../game/model/PlayMode.ts";
 
 type GameState = {
-  musicMode?: "upload" | "library";
-  instrument?: "piano" | "guitar" | "bass";
-  songId?: "mario" | "pirate";
+    musicMode?: "upload" | "library";
+    instrument?: "piano" | "guitar" | "bass";
+    songId?: SongId;
 };
 
-type PlayMode = "listen" | "play";
 
 function GamePage() {
-  const location = useLocation();
-  const navigate = useNavigate();
+    const location = useLocation();
+    const navigate = useNavigate();
 
-  const { musicMode, instrument, songId } = (location.state as GameState) ?? {};
-  // États qui seront partagés avec le futur PianoHero
-  const [playMode, setPlayMode] = useState<PlayMode>("play");
-  const [tempo, setTempo] = useState(100);
-  const [isPaused, setIsPaused] = useState(false);
-  const [restartKey, setRestartKey] = useState(0);
+    const { musicMode, instrument, songId } =
+        (location.state as GameState) ?? {};
+    const selectedSong = getSongDefinition(songId ?? "mario");
 
-  const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
+    // États qui seront partagés avec le futur PianoHero
+    const [playMode, setPlayMode] = useState<PlayMode>("play");
+    const [tempo, setTempo] = useState(100);
+    const [isPaused, setIsPaused] = useState(false);
+    const [restartKey, setRestartKey] = useState(0);
 
-  const totalAttempts =
-    gameResult === null
-      ? 0
-      : gameResult.hits + gameResult.misses + gameResult.wrongHits;
+    const [gameResult, setGameResult] = useState<SongGameResult | null>(null);
 
-  const successRate =
-    gameResult === null || totalAttempts === 0
-      ? 0
-      : Math.round((gameResult.hits / totalAttempts) * 100);
+    const totalAttempts =
+        gameResult === null
+            ? 0
+            : gameResult.hits + gameResult.misses + gameResult.wrongHits;
 
-  const handleGameFinished = useCallback((result: SongGameResult) => {
-    setGameResult(result);
-  }, []);
+    const successRate =
+        gameResult === null ||
+        totalAttempts === 0
+            ? 0
+            : Math.round((gameResult.hits / totalAttempts) * 100);
 
-  const handleRestart = () => {
-    setGameResult(null);
+    const handleGameFinished =
+        useCallback(
+            (result: SongGameResult) => {
+                setGameResult(result);
+            },
+            [],
+        );
 
-    setRestartKey((value) => value + 1);
+    const handleRestart = () => {
+        setGameResult(null);
 
-    setIsPaused(false);
-  };
+        setRestartKey((value) => value + 1,);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.code === "Space" && !isPaused) {
-        event.preventDefault();
-        setIsPaused(true);
-      }
+        setIsPaused(false);
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    const handlePlayModeChange = (
+        newMode: PlayMode,
+    ) => {
+        if (newMode === playMode) {
+            return;
+        }
 
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+        setPlayMode(newMode);
+
+        setGameResult(null);
+        setIsPaused(false);
+
+        setRestartKey(
+            (previous) => previous + 1,
+        );
     };
-  }, [isPaused]);
 
-  return (
-    <div className="min-h-screen w-full pt-30">
-      <SongPianoHero
-        isPaused={isPaused}
-        restartKey={restartKey}
-        onFinished={handleGameFinished}
-      />
+    return (
+        <div className="min-h-screen w-full pt-30">
 
-      <MediaPlayer
-        playMode={playMode}
-        tempo={tempo}
-        onPlayModeChange={setPlayMode}
-        onTempoChange={setTempo}
-        onPause={() => setIsPaused(true)}
-      />
+            <SongPianoHero
+                key={selectedSong.id}
+                songSource={selectedSong.source}
+                playMode={playMode}
+                tempo={tempo}
+                isPaused={isPaused}
+                restartKey={restartKey}
+                onFinished={handleGameFinished}
 
-      {isPaused && (
-        <PauseMenu
-          onResume={() => setIsPaused(false)}
-          onRestart={handleRestart}
-          onChangeInstrument={() => {
-            console.log("Changer instrument");
-          }}
-          onQuit={() => navigate("/")}
-        />
-      )}
+            />
 
-      {gameResult !== null && (
-        <div className="fixed inset-0 z-50">
-          <EndGamePopup
-            score={gameResult.score}
-            successRate={successRate}
-            onRestart={handleRestart}
-            onQuit={() => navigate("/")}
-          />
+            <MediaPlayer
+                playMode={playMode}
+                tempo={tempo}
+                onPlayModeChange={handlePlayModeChange}
+                onTempoChange={setTempo}
+                onPause={() => setIsPaused(true)}
+            />
+
+            {isPaused && (
+                <PauseMenu
+                    onResume={() => setIsPaused(false)}
+                    onRestart={handleRestart}
+                    onChangeInstrument={() => {
+                        console.log("Changer instrument");
+                    }}
+                    onQuit={() => navigate("/")}
+                />
+            )}
+
+            {gameResult !== null && (
+                <div className="fixed inset-0 z-50">
+                    <EndGamePopup
+                        playMode={playMode}
+                        score={gameResult.score}
+                        successRate={successRate}
+                        onRestart={handleRestart}
+                        onQuit={() => navigate("/")}
+                    />
+                </div>
+            )}
+
+            {/* Informations temporaires pour le développement */}
+            <div className="mt-4 text-center text-sm text-white/50">
+                <p>Source : {musicMode}</p>
+                <p>Instrument : {instrument}</p>
+                <p>Pause : {isPaused ? "oui" : "non"}</p>
+                <p>Morceau : {songId ?? "aucun"}</p>
+            </div>
         </div>
-      )}
-
-      {/* Informations temporaires pour le développement */}
-      <div className="mt-4 text-center text-sm text-white/50">
-        <p>Source : {musicMode}</p>
-        <p>Instrument : {instrument}</p>
-        <p>Pause : {isPaused ? "oui" : "non"}</p>
-        <p>Morceau : {songId ?? "aucun"}</p>
-      </div>
-    </div>
-  );
+    );
 }
 
 export default GamePage;

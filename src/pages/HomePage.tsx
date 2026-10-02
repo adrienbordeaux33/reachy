@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import type { MusicSong } from "../music/model/MusicSong";
 import PlayButton from "../components/ui/PlayButton";
 import { GameSetupPopup } from "../components/GameSetupPopup";
+import type { SongId } from "../music/library/SongLibrary.ts";
 
 function HomePage() {
     const [isPopupOpen, setIsPopupOpen] = useState(false);
@@ -12,7 +13,7 @@ function HomePage() {
     const handleStart = (
         musicMode: "upload" | "library" | "free",
         instrument: "piano" | "guitar" | "bass",
-        songId?: "mario" | "pirate",
+        songId?: SongId,
         uploadedSong?: MusicSong,
     ) => {
         if (musicMode === "free") {
