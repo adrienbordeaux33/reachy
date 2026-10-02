@@ -3,16 +3,14 @@ import { InstrumentSelector } from "./InstrumentSelector.tsx";
 import { SelectionButton } from "./SelectionButton.tsx";
 import { NeonDecoration } from "./NeonDecoration";
 import {
-  PianoIcon,
-  GuitarIcon,
   MusicIcon,
   PlayIcon,
   SlidersIcon,
 } from "./icons.tsx";
+import {SONG_LIBRARY, type SongId} from "../music/library/SongLibrary.ts";
 
 type MusicMode = "upload" | "library" | "free";
 
-type SongId = "mario" | "pirate";
 type Instrument = "piano" | "guitar" | "bass";
 interface GameSetupPopupProps {
   onStart: (
@@ -133,8 +131,16 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                       focus:border-purple-300
                     "
                   >
-                    <option value="mario">Mario</option>
-                    <option value="pirate">Pirates des Caraïbes</option>
+                      {Object.values(SONG_LIBRARY).map(
+                          (song) => (
+                              <option
+                                  key={song.id}
+                                  value={song.id}
+                              >
+                                  {song.title}
+                              </option>
+                          ),
+                      )}
                   </select>
                 )}
               </div>
@@ -163,23 +169,6 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
             {/* Instruments */}
             <InstrumentSelector value={instrument} onChange={setInstrument} />
 
-            <SelectionButton
-              active={instrument === "guitar"}
-              variant="purple"
-              icon={<GuitarIcon />}
-              onClick={() => setInstrument("guitar")}
-            >
-              Guitare
-            </SelectionButton>
-
-            <SelectionButton
-              active={instrument === "bass"}
-              variant="pink"
-              icon={<GuitarIcon />}
-              onClick={() => setInstrument("bass")}
-            >
-              Basse
-            </SelectionButton>
           </div>
 
           {/* CTA */}
@@ -194,25 +183,25 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                 )
               }
               className="
-    group relative
-    flex min-h-24 w-full max-w-xl
-    items-center justify-center gap-5
-    overflow-hidden rounded-3xl
-    border-2 border-emerald-300/90
-    bg-emerald-950/40
-    px-10 py-6
-    shadow-[0_0_28px_rgba(52,211,153,.36)]
-    backdrop-blur-xl
-    transition-all duration-200
-    hover:-translate-y-1
-    hover:bg-emerald-900/45
-    hover:shadow-[0_0_45px_rgba(52,211,153,.48)]
-    active:translate-y-0
-    active:scale-[0.985]
-    focus:outline-none
-    focus-visible:ring-2
-    focus-visible:ring-white
-    "
+                    group relative
+                    flex min-h-24 w-full max-w-xl
+                    items-center justify-center gap-5
+                    overflow-hidden rounded-3xl
+                    border-2 border-emerald-300/90
+                    bg-emerald-950/40
+                    px-10 py-6
+                    shadow-[0_0_28px_rgba(52,211,153,.36)]
+                    backdrop-blur-xl
+                    transition-all duration-200
+                    hover:-translate-y-1
+                    hover:bg-emerald-900/45
+                    hover:shadow-[0_0_45px_rgba(52,211,153,.48)]
+                    active:translate-y-0
+                    active:scale-[0.985]
+                    focus:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-white
+                    "
             >
               <PlayIcon />
 
@@ -232,7 +221,6 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
             <span className="h-1 w-12 rounded-full bg-cyan-400" />
           </div>
         </div>
-        +{" "}
       </section>
     </div>
   );

@@ -1,4 +1,5 @@
-type PlayMode = "listen" | "play";
+import type {PlayMode} from "../../game/model/PlayMode.ts";
+
 
 interface MediaPlayerProps {
     playMode: PlayMode;
