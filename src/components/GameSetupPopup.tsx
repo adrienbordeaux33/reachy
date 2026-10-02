@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+
 import { InstrumentSelector } from "./InstrumentSelector.tsx";
 import { SelectionButton } from "./SelectionButton.tsx";
 import { NeonDecoration } from "./NeonDecoration";
 import { MusicIcon, PlayIcon, SlidersIcon } from "./icons.tsx";
+
 import { TxtMusicParser } from "../music/parsers/TxtMusicParser";
 import type { MusicSong } from "../music/model/MusicSong";
 
@@ -10,6 +12,7 @@ type MusicMode = "upload" | "library" | "free";
 
 type SongId = "mario" | "pirate";
 type Instrument = "piano" | "guitar" | "bass";
+
 interface GameSetupPopupProps {
     onStart: (
         musicMode: MusicMode,
@@ -84,16 +87,16 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
 
                     <div
                         className="
-    relative overflow-hidden
-    rounded-[2.5rem]
-    border border-cyan-300/30
-    bg-slate-950/75
-    px-6 py-8
-    shadow-[0_30px_90px_rgba(0,0,0,.55),0_0_50px_rgba(34,211,238,.10),inset_0_1px_0_rgba(255,255,255,.1)]
-    backdrop-blur-2xl
-    sm:px-10
-    md:px-14
-    "
+              relative overflow-hidden
+              rounded-[2.5rem]
+              border border-cyan-300/30
+              bg-slate-950/75
+              px-6 py-8
+              shadow-[0_30px_90px_rgba(0,0,0,.55),0_0_50px_rgba(34,211,238,.10),inset_0_1px_0_rgba(255,255,255,.1)]
+              backdrop-blur-2xl
+              sm:px-10
+              md:px-14
+            "
                     >
                         {/* Bordure colorée */}
                         <div className="pointer-events-none absolute inset-0 rounded-[2.5rem] border-2 border-transparent [mask-composite:exclude]" />
@@ -111,20 +114,43 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                         </div>
 
                         {/* Choix musique */}
-                        <div className="grid gap-5 md:grid-cols-3">
-                            <div className="flex flex-col gap-3">
-                                <SelectionButton
-                                    active={musicMode === "upload"}
-                                    variant="cyan"
-                                    icon={<MusicIcon />}
-                                    onClick={() => setMusicMode("upload")}
-                                >
-                                    Charger
-                                    <br />
-                                    ma musique
-                                </SelectionButton>
+                        <div className="grid items-start gap-5 md:grid-cols-3">
+                            <SelectionButton
+                                active={musicMode === "upload"}
+                                variant="cyan"
+                                icon={<MusicIcon />}
+                                onClick={() => setMusicMode("upload")}
+                            >
+                                Charger
+                                <br />
+                                ma musique
+                            </SelectionButton>
 
-                                {musicMode === "upload" && (
+                            <SelectionButton
+                                active={musicMode === "library"}
+                                variant="purple"
+                                icon={<MusicIcon />}
+                                onClick={() => setMusicMode("library")}
+                            >
+                                Choisir
+                                <br />
+                                un morceau
+                            </SelectionButton>
+
+                            <SelectionButton
+                                active={musicMode === "free"}
+                                variant="pink"
+                                icon={<SlidersIcon />}
+                                onClick={() => setMusicMode("free")}
+                            >
+                                Mode libre
+                            </SelectionButton>
+                        </div>
+
+                        {/* Options du mode sélectionné */}
+                        <div className="mt-3 min-h-[58px]">
+                            {musicMode === "upload" && (
+                                <div className="grid gap-5 md:grid-cols-3">
                                     <input
                                         type="file"
                                         accept=".txt,text/plain"
@@ -134,39 +160,30 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                             void handleUploadedFile(file);
                                         }}
                                         className="
-        w-full rounded-xl
-        border border-cyan-400/40
-        bg-slate-950/80
-        px-4 py-3
-        text-sm text-white
-        outline-none
-        file:mr-4
-        file:rounded-lg
-        file:border-0
-        file:bg-cyan-400/15
-        file:px-3
-        file:py-2
-        file:font-semibold
-        file:text-cyan-200
-        hover:file:bg-cyan-400/25
-      "
+                      w-full rounded-xl
+                      border border-cyan-400/40
+                      bg-slate-950/80
+                      px-4 py-3
+                      text-sm text-white
+                      outline-none
+                      file:mr-4
+                      file:rounded-lg
+                      file:border-0
+                      file:bg-cyan-400/15
+                      file:px-3
+                      file:py-2
+                      file:font-semibold
+                      file:text-cyan-200
+                      hover:file:bg-cyan-400/25
+                    "
                                     />
-                                )}
-                            </div>
+                                </div>
+                            )}
 
-                            <div className="flex flex-col gap-3">
-                                <SelectionButton
-                                    active={musicMode === "library"}
-                                    variant="purple"
-                                    icon={<MusicIcon />}
-                                    onClick={() => setMusicMode("library")}
-                                >
-                                    Choisir
-                                    <br />
-                                    un morceau
-                                </SelectionButton>
+                            {musicMode === "library" && (
+                                <div className="grid gap-5 md:grid-cols-3">
+                                    <div />
 
-                                {musicMode === "library" && (
                                     <select
                                         value={songId}
                                         onChange={(event) =>
@@ -189,17 +206,8 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                             Pirates des Caraïbes
                                         </option>
                                     </select>
-                                )}
-                            </div>
-
-                            <SelectionButton
-                                active={musicMode === "free"}
-                                variant="pink"
-                                icon={<SlidersIcon />}
-                                onClick={() => setMusicMode("free")}
-                            >
-                                Mode libre
-                            </SelectionButton>
+                                </div>
+                            )}
                         </div>
 
                         {/* Séparateur Instrument */}
@@ -236,25 +244,25 @@ export function GameSetupPopup({ onStart, onClose }: GameSetupPopupProps) {
                                     )
                                 }
                                 className="
-    group relative
-    flex min-h-24 w-full max-w-xl
-    items-center justify-center gap-5
-    overflow-hidden rounded-3xl
-    border-2 border-emerald-300/90
-    bg-emerald-950/40
-    px-10 py-6
-    shadow-[0_0_28px_rgba(52,211,153,.36)]
-    backdrop-blur-xl
-    transition-all duration-200
-    hover:-translate-y-1
-    hover:bg-emerald-900/45
-    hover:shadow-[0_0_45px_rgba(52,211,153,.48)]
-    active:translate-y-0
-    active:scale-[0.985]
-    focus:outline-none
-    focus-visible:ring-2
-    focus-visible:ring-white
-    "
+                  group relative
+                  flex min-h-24 w-full max-w-xl
+                  items-center justify-center gap-5
+                  overflow-hidden rounded-3xl
+                  border-2 border-emerald-300/90
+                  bg-emerald-950/40
+                  px-10 py-6
+                  shadow-[0_0_28px_rgba(52,211,153,.36)]
+                  backdrop-blur-xl
+                  transition-all duration-200
+                  hover:-translate-y-1
+                  hover:bg-emerald-900/45
+                  hover:shadow-[0_0_45px_rgba(52,211,153,.48)]
+                  active:translate-y-0
+                  active:scale-[0.985]
+                  focus:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-white
+                "
                             >
                                 <PlayIcon />
 
