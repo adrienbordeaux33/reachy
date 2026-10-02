@@ -1,7 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import type { Instrument } from "../audio/Instrument.ts";
 import concertBackground from "../assets/fond.png";
 import { NeonDecoration } from "./NeonDecoration";
-import { InstrumentSelector, type Instrument } from "./InstrumentSelector";
+import { InstrumentSelector } from "./InstrumentSelector";
 
 interface FreeModePauseMenuProps {
   isOpen?: boolean;
@@ -30,9 +31,19 @@ export function FreeModePauseMenu({
   isSaveDisabled = false,
   onQuit = () => {},
 }: FreeModePauseMenuProps) {
-  const [isInstrumentSelectorOpen, setIsInstrumentSelectorOpen] =
-    useState(false);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onResume();
+      }
+    };
 
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onResume]);
   if (!isOpen) return null;
 
   return (
@@ -115,90 +126,77 @@ export function FreeModePauseMenu({
             </header>
 
             {/* Actions */}
-            {isInstrumentSelectorOpen ? (
-              <div className="mx-auto w-full max-w-3xl space-y-6">
-                <InstrumentSelector
-                  value={instrument}
-                  onChange={onChangeInstrument}
-                />
-                <button
-                  type="button"
-                  onClick={() => setIsInstrumentSelectorOpen(false)}
-                  className="mx-auto block rounded-lg border border-white/30 px-5 py-3 font-semibold text-white transition hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-                >
-                  Retour au menu
-                </button>
-              </div>
-            ) : (
-              <div className="mx-auto grid max-w-3xl gap-5 md:grid-cols-2">
-                <ActionButton
-                  variant="green"
-                  icon={<PlayIcon />}
-                  onClick={onResume}
-                >
-                  Reprendre
-                </ActionButton>
+            {/* Informations de session */}
+            <div className="mb-6 flex items-center justify-center gap-3 text-white/60">
+              <DurationIcon />
+              <span className="text-sm font-semibold uppercase tracking-wider">
+                Durée
+              </span>
+              <strong className="text-xl text-cyan-300">{duration}</strong>
+            </div>
 
-                {/* Durée */}
-                <ActionButton variant="cyan" icon={<DurationIcon />}>
-                  <span className="flex items-baseline gap-3">
-                    <span className="uppercase">Durée :</span>
+            {/* Actions principales */}
+            <div className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
+              <ActionButton
+                variant="green"
+                icon={<PlayIcon />}
+                onClick={onResume}
+              >
+                Reprendre
+              </ActionButton>
 
-                    <strong className="text-3xl text-cyan-300 drop-shadow-[0_0_12px_rgba(34,211,238,.6)]">
-                      {duration}
-                    </strong>
-                  </span>
-                </ActionButton>
+              <ActionButton
+                variant="cyan"
+                icon={<RestartIcon />}
+                onClick={onRestart}
+              >
+                Recommencer
+              </ActionButton>
+            </div>
 
-                {/* Instrument */}
-                <ActionButton
-                  variant="orange"
-                  icon={<SlidersIcon />}
-                  onClick={() => setIsInstrumentSelectorOpen(true)}
-                >
-                  Changer
-                  <br />
-                  d&apos;instrument
-                </ActionButton>
+            {/* Instrument */}
+            <div className="mx-auto mt-6 max-w-3xl">
+              <p className="mb-3 text-center text-sm font-semibold uppercase tracking-[0.2em] text-white/50">
+                Instrument
+              </p>
 
-                {/* Recommencer */}
-                <ActionButton
-                  variant="cyan"
-                  icon={<RestartIcon />}
-                  onClick={onRestart}
-                >
-                  Recommencer
-                </ActionButton>
+              <InstrumentSelector
+                value={instrument}
+                onChange={onChangeInstrument}
+              />
+            </div>
 
-                {/* Réécouter */}
-                <ActionButton
-                  variant="purple"
-                  icon={<MusicIcon />}
-                  onClick={onListen}
-                >
-                  Réécouter
-                </ActionButton>
+            {/* Enregistrement */}
+            <div className="mx-auto mt-6 grid max-w-3xl gap-4 md:grid-cols-2">
+              <ActionButton
+                variant="purple"
+                icon={<MusicIcon />}
+                onClick={onListen}
+              >
+                Réécouter
+              </ActionButton>
 
-                {/* Enregistrer */}
-                <ActionButton
-                  variant="green"
-                  icon={<SaveIcon />}
-                  onClick={onSave}
-                  disabled={isSaveDisabled}
-                >
-                  Enregistrer
-                </ActionButton>
+              <ActionButton
+                variant="green"
+                icon={<SaveIcon />}
+                onClick={onSave}
+                disabled={isSaveDisabled}
+              >
+                Enregistrer
+              </ActionButton>
+            </div>
 
-                {/* Quitter */}
-                <ActionButton
-                  variant="pink"
-                  icon={<ExitIcon />}
-                  onClick={onQuit}
-                >
-                  Quitter
-                </ActionButton>
-              </div>
-            )}
+            {/* Quitter */}
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={onQuit}
+                className="flex min-w-48 items-center justify-center gap-3 rounded-2xl border border-rose-400/80 bg-rose-950/25 px-6 py-3 text-base font-semibold text-rose-100 shadow-[0_0_20px_rgba(244,63,94,.22)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-0.5 hover:bg-rose-900/30 hover:shadow-[0_0_30px_rgba(244,63,94,.38)] active:translate-y-0 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
+              >
+                <ExitIcon />
+                Quitter
+              </button>
+            </div>
 
             {saveStatus && (
               <p
@@ -209,6 +207,14 @@ export function FreeModePauseMenu({
                 {saveStatus}
               </p>
             )}
+
+            <div className="mt-8 flex items-center justify-center gap-4 pt-6">
+              <kbd className="rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-sm text-white/50">
+                ESC
+              </kbd>
+
+              <span className="text-sm text-white/50">pour reprendre</span>
+            </div>
 
             {/* Décoration intérieure */}
             <div className="pointer-events-none absolute bottom-8 right-10 hidden rotate-[-32deg] gap-2 lg:flex">
@@ -293,7 +299,7 @@ function ActionButton({
       disabled={disabled}
       className={`
         group
-        flex min-h-24
+        flex min-h-20
         items-center
         gap-5
         rounded-3xl
@@ -321,7 +327,7 @@ function ActionButton({
     >
       <span
         className="
-          grid h-14 w-14
+          grid h-10 w-10
           shrink-0
           place-items-center
           transition-transform
@@ -371,26 +377,6 @@ function RestartIcon() {
       <path d="M20 11a8 8 0 1 0-2 5.5" />
       <path d="M20 4v7h-7" />
       <path d="M10 9l5 3-5 3V9z" />
-    </svg>
-  );
-}
-
-function SlidersIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-10 w-10"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path d="M4 6h16" />
-      <path d="M4 12h16" />
-      <path d="M4 18h16" />
-
-      <circle cx="9" cy="6" r="2" />
-      <circle cx="15" cy="12" r="2" />
-      <circle cx="11" cy="18" r="2" />
     </svg>
   );
 }

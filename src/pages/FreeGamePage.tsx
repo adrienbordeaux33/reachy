@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import type { Instrument } from "../audio/Instrument.ts";
 import { Chrono } from "../components/Chrono";
 import { FreeModePauseMenu } from "../components/FreeModePauseMenu";
-import type { Instrument } from "../components/InstrumentSelector";
 import PianoHero from "../components/PianoHero";
+import { MediaPlayer } from "../components/ui/MediaPlayer";
 
 type FreeGameState = {
   instrument?: Instrument;
@@ -24,6 +25,19 @@ function FreeGamePage() {
   const [hasStarted, setHasStarted] = useState(false);
   const [duration, setDuration] = useState("0:00");
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === "Space" && !isPaused) {
+        event.preventDefault();
+        setIsPaused(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isPaused]);
   const downloadRecording = (recording: Blob) => {
     const extension = recording.type.includes("mp4")
       ? "m4a"
@@ -32,16 +46,21 @@ function FreeGamePage() {
         : recording.type.includes("midi")
           ? "mid"
           : "webm";
+
     const downloadLink = document.createElement("a");
     const recordingUrl = URL.createObjectURL(recording);
+
     downloadLink.href = recordingUrl;
     downloadLink.download = `reachy-composition-${new Date()
       .toISOString()
       .replace(/[:.]/g, "-")}.${extension}`;
+
     document.body.append(downloadLink);
     downloadLink.click();
     downloadLink.remove();
+
     window.setTimeout(() => URL.revokeObjectURL(recordingUrl), 1000);
+
     setSaveStatus("Téléchargement de la composition lancé.");
   };
 
@@ -49,7 +68,6 @@ function FreeGamePage() {
     setSaveStatus(message);
     setShouldSaveRecording(false);
   };
-
   const handleNotePlayed = () => setHasStarted(true);
   const pauseSession = () => setIsPaused(true);
   const resumeSession = () => setIsPaused(false);
@@ -89,9 +107,8 @@ function FreeGamePage() {
               onNotePlayed={handleNotePlayed}
               onReplayComplete={() => setIsReplaying(false)}
               onStopReplay={() => setIsReplaying(false)}
-              onPause={pauseSession}
-              onResume={resumeSession}
             />
+            <MediaPlayer onPause={pauseSession} />
           </div>
           {isPaused && !isReplaying && (
             <FreeModePauseMenu

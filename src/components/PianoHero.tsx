@@ -1,13 +1,12 @@
 import { useEffect, useRef } from "react";
 import * as Tone from "tone";
-import type { Instrument } from "./InstrumentSelector.tsx";
+import type { Instrument } from "../audio/Instrument.ts";
 import {
   PIANO_FIRST_NOTE,
   PIANO_LAST_NOTE,
   PianoCanvas,
   type TrailNote,
 } from "./PianoCanvas";
-import { PauseIcon } from "./icons.tsx";
 
 interface RecordedNote {
   midi: number;
@@ -57,8 +56,6 @@ interface PianoHeroProps {
   onNotePlayed: () => void;
   onReplayComplete: () => void;
   onStopReplay: () => void;
-  onPause: () => void;
-  onResume: () => void;
 }
 
 function getToneNote(midi: number, instrument: Instrument): string {
@@ -161,8 +158,6 @@ export default function PianoHero({
   onNotePlayed,
   onReplayComplete,
   onStopReplay,
-  onPause,
-  onResume,
 }: PianoHeroProps) {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioOutputRef = useRef<GainNode | null>(null);
@@ -502,7 +497,7 @@ export default function PianoHero({
 
   return (
     <section
-      className="mx-auto my-[30px] box-border w-full max-w-[1000px] rounded-lg border border-[rgba(193,218,197,0.16)] bg-[radial-gradient(ellipse_at_50%_0%,rgba(78,117,91,0.2),transparent_62%),#101713] p-[22px] text-[#edf2e9] shadow-[0_24px_80px_rgba(0,0,0,0.28)] max-[600px]:my-3 max-[600px]:p-[13px]"
+      className="mx-auto box-border w-full max-w-[1000px] rounded-lg border border-[rgba(193,218,197,0.16)] bg-[radial-gradient(ellipse_at_50%_0%,rgba(78,117,91,0.2),transparent_62%),#101713] p-[22px] text-[#edf2e9] shadow-[0_24px_80px_rgba(0,0,0,0.28)] max-[600px]:my-3 max-[600px]:p-[13px]"
       aria-label="Piano Hero"
     >
       <PianoCanvas
@@ -512,35 +507,18 @@ export default function PianoHero({
         onNotePress={pressNote}
         onNoteRelease={releaseNote}
       />
-      {isReplaying ? (
-        <div className="mt-3 flex justify-center border-t border-[rgba(193,218,197,0.16)] pt-4">
+      {isReplaying && (
+        <div className="mt-3 flex justify-center">
           <button
             type="button"
             onClick={onStopReplay}
-            className="group relative flex min-h-24 w-full max-w-xl items-center justify-center gap-5 overflow-hidden rounded-3xl border-2 border-rose-300/90 bg-rose-950/40 px-6 py-6 text-rose-100 shadow-[0_0_28px_rgba(244,63,94,.3)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:bg-rose-900/45 hover:shadow-[0_0_45px_rgba(244,63,94,.45)] active:translate-y-0 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="flex items-center gap-2 rounded-full border border-white/20 bg-black/35 px-5 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-md transition hover:border-cyan-300/60 hover:bg-white/10"
           >
             <span
               aria-hidden="true"
-              className="h-5 w-5 shrink-0 rounded-sm border-2 border-current"
+              className="h-3 w-3 rounded-sm border border-current"
             />
-            <span className="text-center text-lg font-black uppercase sm:text-xl">
-              Arrêter la réécoute et revenir au menu
-            </span>
-          </button>
-        </div>
-      ) : (
-        <div className="mt-3 flex justify-center border-t border-[rgba(193,218,197,0.16)] pt-4">
-          <button
-            type="button"
-            aria-pressed={isPaused}
-            onClick={isPaused ? onResume : onPause}
-            className="group relative flex min-h-24 w-full max-w-xl items-center justify-center gap-5 overflow-hidden rounded-3xl border-2 border-emerald-300/90 bg-emerald-950/40 px-10 py-6 text-emerald-100 shadow-[0_0_28px_rgba(52,211,153,.36)] backdrop-blur-xl transition-all duration-200 hover:-translate-y-1 hover:bg-emerald-900/45 hover:shadow-[0_0_45px_rgba(52,211,153,.48)] active:translate-y-0 active:scale-[0.985] focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
-          >
-            <PauseIcon />
-            <span className="text-xl font-black uppercase tracking-wide sm:text-2xl">
-              {isPaused ? "Reprendre" : "Pause"}
-            </span>
-            <span className="pointer-events-none absolute inset-x-16 top-0 h-px bg-gradient-to-r from-transparent via-white/70 to-transparent" />
+            Arrêter la réécoute
           </button>
         </div>
       )}

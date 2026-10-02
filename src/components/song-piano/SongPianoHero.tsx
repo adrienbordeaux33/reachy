@@ -3,6 +3,7 @@ import sceneBackground from "../../assets/fond.png";
 import { BeatmapGenerator } from "../../game/beatmap/BeatmapGenerator";
 import { GameClock } from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
+import type { Instrument } from "../../audio/Instrument.ts";
 import type { PlayMode } from "../../game/model/PlayMode.ts";
 import {
   GameTimeline,
@@ -29,6 +30,7 @@ export interface SongGameResult {
 
 interface SongPianoHeroProps {
   songSource: string;
+  instrument?: Instrument;
   tempo: number;
   isPaused?: boolean;
   playMode: PlayMode;
@@ -40,6 +42,7 @@ interface SongPianoHeroProps {
 export default function SongPianoHero({
   onRobotEvent,
   songSource,
+  instrument,
   tempo,
   isPaused = false,
   playMode,
@@ -70,6 +73,7 @@ export default function SongPianoHero({
     Math.max(MIN_PLAYBACK_RATE, tempo / 100),
   );
   const currentPlaybackRateRef = useRef(playbackRate);
+  const currentInstrumentRef = useRef(instrument);
   const playerRef = useRef<MusicPlayer | null>(null);
   const clockRef = useRef(new GameClock());
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -165,12 +169,12 @@ export default function SongPianoHero({
     engine.restart();
     syncGameState();
 
-    player.play(song, audioContext, songStartTime, playbackRate, 0);
+    player.play(song, audioContext, songStartTime, playbackRate, 0, instrument);
     clockRef.current.start(audioContext, gameStartTime);
     clockRef.current.setPlaybackRate(playbackRate);
     setPressedNotes(new Set());
     setIsPlaying(true);
-  }, [engine, playbackRate, song, syncGameState]);
+  }, [engine, instrument, playbackRate, song, syncGameState]);
 
   useEffect(() => {
     const clock = clockRef.current;
@@ -288,8 +292,27 @@ export default function SongPianoHero({
       audioContext.currentTime,
       playbackRate,
       songTime,
+      currentInstrumentRef.current,
     );
   }, [getSongTime, isPlaying, playbackRate, song]);
+
+  useEffect(() => {
+    if (currentInstrumentRef.current === instrument) return;
+
+    currentInstrumentRef.current = instrument;
+    const audioContext = audioContextRef.current;
+    if (audioContext === null || !isPlaying) return;
+
+    const songTime = getSongTime();
+    playerRef.current?.play(
+      song,
+      audioContext,
+      audioContext.currentTime,
+      playbackRate,
+      songTime,
+      instrument,
+    );
+  }, [getSongTime, instrument, isPlaying, playbackRate, song]);
 
   return (
     <main

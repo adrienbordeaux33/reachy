@@ -1,7 +1,7 @@
 import { SelectionButton } from "./SelectionButton";
 import { GuitarIcon, PianoIcon } from "./icons";
+import type {Instrument} from "../audio/Instrument.ts";
 
-export type Instrument = "piano" | "guitar" | "bass";
 
 interface InstrumentSelectorProps {
   value: Instrument;

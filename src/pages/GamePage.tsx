@@ -1,10 +1,12 @@
 import { useCallback, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import type { Instrument } from "../audio/Instrument.ts";
 import type { PlayMode } from "../game/model/PlayMode.ts";
 import { getSongDefinition, type SongId } from "../music/library/SongLibrary";
-import { PauseMenu } from "../components/PauseMenu";
+import type { UploadedSong } from "../music/model/UploadedSong.ts";
 import { EndGamePopup } from "../components/EndGamePopup";
+import { PauseMenu } from "../components/PauseMenu";
 import {
   ReachyRobot,
   type ReachyRobotAction,
@@ -17,8 +19,9 @@ import SongPianoHero, {
 
 type GameState = {
   musicMode?: "upload" | "library";
-  instrument?: "piano" | "guitar" | "bass";
+  instrument?: Instrument;
   songId?: SongId;
+  uploadedSong?: UploadedSong;
 };
 
 interface WidgetPosition {
@@ -35,9 +38,22 @@ interface WidgetDrag {
 function GamePage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { musicMode, instrument, songId } = (location.state as GameState) ?? {};
-  const selectedSong = getSongDefinition(songId ?? "mario");
+  const {
+    musicMode,
+    instrument: initialInstrument,
+    songId,
+    uploadedSong,
+  } = (location.state as GameState) ?? {};
+  const selectedSong =
+    musicMode === "upload" && uploadedSong
+      ? uploadedSong
+      : getSongDefinition(songId ?? "mario");
 
+  const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(
+    initialInstrument ?? "piano",
+  );
+  const [isInstrumentSelectorOpen, setIsInstrumentSelectorOpen] =
+    useState(false);
   const [playMode, setPlayMode] = useState<PlayMode>("play");
   const [tempo, setTempo] = useState(100);
   const [isPaused, setIsPaused] = useState(false);
@@ -46,11 +62,11 @@ function GamePage() {
   const [robotAction, setRobotAction] = useState<ReachyRobotActionEvent | null>(
     null,
   );
+  const [reachyWidgetPosition, setReachyWidgetPosition] =
+    useState<WidgetPosition | null>(null);
   const robotActionIdRef = useRef(0);
   const reachyWidgetRef = useRef<HTMLElement | null>(null);
   const widgetDragRef = useRef<WidgetDrag | null>(null);
-  const [reachyWidgetPosition, setReachyWidgetPosition] =
-    useState<WidgetPosition | null>(null);
 
   const totalAttempts = gameResult
     ? gameResult.hits + gameResult.misses + gameResult.wrongHits
@@ -75,6 +91,7 @@ function GamePage() {
   const handleRestart = () => {
     setGameResult(null);
     setRestartKey((value) => value + 1);
+    setIsInstrumentSelectorOpen(false);
     setIsPaused(false);
   };
 
@@ -84,6 +101,7 @@ function GamePage() {
     setPlayMode(newMode);
     setGameResult(null);
     setIsPaused(false);
+    setIsInstrumentSelectorOpen(false);
     setRestartKey((previous) => previous + 1);
   };
 
@@ -140,6 +158,7 @@ function GamePage() {
       <SongPianoHero
         key={selectedSong.id}
         songSource={selectedSong.source}
+        instrument={selectedInstrument}
         playMode={playMode}
         tempo={tempo}
         isPaused={isPaused}
@@ -158,12 +177,18 @@ function GamePage() {
 
       {isPaused && (
         <PauseMenu
-          onResume={() => setIsPaused(false)}
+          onResume={() => {
+            setIsInstrumentSelectorOpen(false);
+            setIsPaused(false);
+          }}
           onRestart={handleRestart}
           onChangeInstrument={() => {
-            console.log("Changer instrument");
+            setIsInstrumentSelectorOpen((previous) => !previous);
           }}
           onQuit={() => navigate("/")}
+          showInstrumentSelector={isInstrumentSelectorOpen}
+          instrument={selectedInstrument}
+          onInstrumentChange={setSelectedInstrument}
         />
       )}
 
@@ -202,9 +227,9 @@ function GamePage() {
 
       <div className="mt-4 text-center text-sm text-white/50">
         <p>Source : {musicMode}</p>
-        <p>Instrument : {instrument}</p>
+        <p>Instrument : {selectedInstrument}</p>
         <p>Pause : {isPaused ? "oui" : "non"}</p>
-        <p>Morceau : {songId ?? "aucun"}</p>
+        <p>Morceau : {uploadedSong?.title ?? songId ?? "aucun"}</p>
       </div>
     </div>
   );

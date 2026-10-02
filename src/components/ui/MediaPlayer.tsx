@@ -2,10 +2,10 @@ import type {PlayMode} from "../../game/model/PlayMode.ts";
 
 
 interface MediaPlayerProps {
-    playMode: PlayMode;
-    tempo: number;
-    onPlayModeChange: (mode: PlayMode) => void;
-    onTempoChange: (tempo: number) => void;
+    playMode?: PlayMode;
+    tempo?: number;
+    onPlayModeChange?: (mode: PlayMode) => void;
+    onTempoChange?: (tempo: number) => void;
     onPause: () => void;
 }
 
@@ -18,7 +18,10 @@ export function MediaPlayer({
     onTempoChange,
     onPause,
 }: MediaPlayerProps) {
+    const isFreeMode = playMode === undefined && tempo === undefined;
     const decreaseTempo = () => {
+        if (tempo === undefined || !onTempoChange) return;
+
         const currentIndex = TEMPOS.indexOf(tempo);
 
         if (currentIndex > 0) {
@@ -27,6 +30,8 @@ export function MediaPlayer({
     };
 
     const increaseTempo = () => {
+        if (tempo === undefined || !onTempoChange) return;
+
         const currentIndex = TEMPOS.indexOf(tempo);
 
         if (currentIndex < TEMPOS.length - 1) {
@@ -36,9 +41,10 @@ export function MediaPlayer({
 
     return (
         <div
-            className="
+            className={`
         mx-auto flex w-full max-w-[1000px]
-        items-center justify-between
+        items-center
+        ${isFreeMode ? "justify-center" : "justify-between"}
         gap-6
         rounded-2xl
         border border-white/20
@@ -46,19 +52,21 @@ export function MediaPlayer({
         px-6 py-4
         text-white
         backdrop-blur-xl
-      "
+    `}
         >
             {/* MODE */}
-            <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold uppercase tracking-wide text-white/60">
-                    Mode
-                </span>
+            {playMode !== undefined && onPlayModeChange && (
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold uppercase tracking-wide text-white/60">
+                            Mode
+                        </span>
 
-                <div className="flex rounded-xl bg-white/10 p-1">
-                    <button
-                        type="button"
-                        onClick={() => onPlayModeChange("listen")}
-                        className={`
+                        <div className="flex rounded-xl bg-white/10 p-1">
+                            <button
+                                type="button"
+                                onClick={() => onPlayModeChange("listen")}
+                                className={`
               rounded-lg px-4 py-2 font-semibold transition
               ${
                   playMode === "listen"
@@ -66,14 +74,14 @@ export function MediaPlayer({
                       : "text-white/60 hover:text-white"
               }
             `}
-                    >
-                        Lecture
-                    </button>
+                            >
+                                Lecture
+                            </button>
 
-                    <button
-                        type="button"
-                        onClick={() => onPlayModeChange("play")}
-                        className={`
+                            <button
+                                type="button"
+                                onClick={() => onPlayModeChange("play")}
+                                className={`
               rounded-lg px-4 py-2 font-semibold transition
               ${
                   playMode === "play"
@@ -81,23 +89,27 @@ export function MediaPlayer({
                       : "text-white/60 hover:text-white"
               }
             `}
-                    >
-                        Jeu
-                    </button>
+                            >
+                                Jeu
+                            </button>
+                        </div>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* TEMPO */}
-            <div className="flex items-center gap-3">
-                <span className="text-sm font-semibold uppercase tracking-wide text-white/60">
-                    Tempo
-                </span>
+            {tempo !== undefined && onTempoChange && (
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm font-semibold uppercase tracking-wide text-white/60">
+                            Tempo
+                        </span>
 
-                <button
-                    type="button"
-                    onClick={decreaseTempo}
-                    disabled={tempo === TEMPOS[0]}
-                    className="
+                        <button
+                            type="button"
+                            onClick={decreaseTempo}
+                            disabled={tempo === TEMPOS[0]}
+                            className="
             h-10 w-10 rounded-lg
             bg-white/10
             text-xl font-bold
@@ -106,17 +118,19 @@ export function MediaPlayer({
             disabled:cursor-not-allowed
             disabled:opacity-30
           "
-                >
-                    −
-                </button>
+                        >
+                            −
+                        </button>
 
-                <span className="w-14 text-center font-bold">{tempo} %</span>
+                        <span className="w-14 text-center font-bold">
+                            {tempo} %
+                        </span>
 
-                <button
-                    type="button"
-                    onClick={increaseTempo}
-                    disabled={tempo === TEMPOS[TEMPOS.length - 1]}
-                    className="
+                        <button
+                            type="button"
+                            onClick={increaseTempo}
+                            disabled={tempo === TEMPOS[TEMPOS.length - 1]}
+                            className="
             h-10 w-10 rounded-lg
             bg-white/10
             text-xl font-bold
@@ -125,10 +139,12 @@ export function MediaPlayer({
             disabled:cursor-not-allowed
             disabled:opacity-30
           "
-                >
-                    +
-                </button>
-            </div>
+                        >
+                            +
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* PAUSE */}
             <button
