@@ -1,11 +1,13 @@
-import type {PlayMode} from "../../game/model/PlayMode.ts";
-
+import type { PlayMode } from "../../game/model/PlayMode.ts";
 
 interface MediaPlayerProps {
     playMode?: PlayMode;
     tempo?: number;
+    hasStarted?: boolean;
+    isPaused?: boolean;
     onPlayModeChange?: (mode: PlayMode) => void;
     onTempoChange?: (tempo: number) => void;
+    onPlay?: () => void;
     onPause: () => void;
 }
 
@@ -14,8 +16,11 @@ const TEMPOS = [50, 75, 100, 125, 150];
 export function MediaPlayer({
     playMode,
     tempo,
+    hasStarted = false,
+    isPaused = false,
     onPlayModeChange,
     onTempoChange,
+    onPlay,
     onPause,
 }: MediaPlayerProps) {
     const isFreeMode = playMode === undefined && tempo === undefined;
@@ -149,21 +154,39 @@ export function MediaPlayer({
             {/* PAUSE */}
             <button
                 type="button"
-                onClick={onPause}
-                className="
-          rounded-xl
-          border border-emerald-300/70
-          bg-emerald-950/40
-          px-6 py-3
-          font-bold
-          uppercase
-          tracking-wide
-          text-emerald-100
-          transition
-          hover:bg-emerald-900/60
-        "
+                onClick={hasStarted && !isPaused ? onPause : onPlay}
+                className={`
+    rounded-xl
+    border
+    px-6 py-3
+    font-bold
+    uppercase
+    tracking-wide
+    transition
+    $${
+        hasStarted && !isPaused
+            ? `
+            border-amber-300/60
+            bg-amber-400/10
+            text-amber-200
+            shadow-[0_0_18px_rgba(251,191,36,.12)]
+            hover:border-amber-300/80
+            hover:bg-amber-400/15
+            hover:shadow-[0_0_22px_rgba(251,191,36,.20)]
+          `
+            : `
+            border-emerald-300/60
+            bg-emerald-400/10
+            text-emerald-200
+            shadow-[0_0_18px_rgba(52,211,153,.12)]
+            hover:border-emerald-300/80
+            hover:bg-emerald-400/15
+            hover:shadow-[0_0_22px_rgba(52,211,153,.20)]
+          `
+    }
+`}
             >
-                Pause
+                {hasStarted && !isPaused ? "Pause" : "Jouer"}
             </button>
         </div>
     );
