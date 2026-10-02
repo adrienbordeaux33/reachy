@@ -1,9 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Instrument } from "../audio/Instrument.ts";
 import { Chrono } from "../components/Chrono";
 import { FreeModePauseMenu } from "../components/FreeModePauseMenu";
 import PianoHero from "../components/PianoHero";
+import {
+  ReachyRobot,
+  type ReachyRobotAction,
+  type ReachyRobotActionEvent,
+} from "../components/ReachyRobot/ReachyRobot";
 import { MediaPlayer } from "../components/ui/MediaPlayer";
 
 type FreeGameState = {
@@ -24,12 +29,29 @@ function FreeGamePage() {
   const [saveStatus, setSaveStatus] = useState("");
   const [hasStarted, setHasStarted] = useState(false);
   const [duration, setDuration] = useState("0:00");
+  const [robotAction, setRobotAction] = useState<ReachyRobotActionEvent | null>(
+    null,
+  );
+  const robotActionIdRef = useRef(0);
+  const robotDanceActiveRef = useRef(false);
+
+  const handleRobotEvent = useCallback((action: ReachyRobotAction) => {
+    robotActionIdRef.current += 1;
+    setRobotAction({
+      id: `free-game-${robotActionIdRef.current}`,
+      action,
+    });
+  }, []);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.code === "Space" && !isPaused) {
         event.preventDefault();
         setIsPaused(true);
+        if (robotDanceActiveRef.current) {
+          robotDanceActiveRef.current = false;
+          handleRobotEvent("dance-stop");
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
@@ -37,7 +59,7 @@ function FreeGamePage() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isPaused]);
+  }, [handleRobotEvent, isPaused]);
   const downloadRecording = (recording: Blob) => {
     const extension = recording.type.includes("mp4")
       ? "m4a"
@@ -68,11 +90,35 @@ function FreeGamePage() {
     setSaveStatus(message);
     setShouldSaveRecording(false);
   };
-  const handleNotePlayed = () => setHasStarted(true);
-  const pauseSession = () => setIsPaused(true);
-  const resumeSession = () => setIsPaused(false);
+  const handleNotePlayed = () => {
+    setHasStarted(true);
+    if (robotDanceActiveRef.current) return;
+
+    robotDanceActiveRef.current = true;
+    handleRobotEvent("dance-start");
+  };
+
+  const pauseSession = () => {
+    setIsPaused(true);
+    if (!robotDanceActiveRef.current) return;
+
+    robotDanceActiveRef.current = false;
+    handleRobotEvent("dance-stop");
+  };
+
+  const resumeSession = () => {
+    setIsPaused(false);
+    if (!hasStarted || robotDanceActiveRef.current) return;
+
+    robotDanceActiveRef.current = true;
+    handleRobotEvent("dance-start");
+  };
 
   const restartSession = () => {
+    if (robotDanceActiveRef.current) {
+      robotDanceActiveRef.current = false;
+      handleRobotEvent("dance-stop");
+    }
     setHasStarted(false);
     setDuration("0:00");
     setIsPaused(false);
@@ -115,7 +161,13 @@ function FreeGamePage() {
               isOpen
               duration={duration}
               instrument={instrument}
-              onChangeInstrument={setInstrument}
+              onChangeInstrument={(nextInstrument) => {
+                setInstrument(nextInstrument);
+                if (robotDanceActiveRef.current) {
+                  robotDanceActiveRef.current = false;
+                  handleRobotEvent("dance-stop");
+                }
+              }}
               saveStatus={saveStatus}
               isSaveDisabled={shouldSaveRecording}
               onResume={resumeSession}
@@ -134,6 +186,10 @@ function FreeGamePage() {
           )}
         </>
       )}
+
+      <aside className="fixed bottom-4 right-4 z-40 max-h-[calc(100dvh-2rem)] w-[min(340px,calc(100vw-2rem))] overflow-y-auto">
+        <ReachyRobot action={robotAction} compact />
+      </aside>
     </div>
   );
 }

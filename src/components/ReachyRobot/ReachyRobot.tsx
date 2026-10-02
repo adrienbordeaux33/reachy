@@ -6,7 +6,11 @@ import {
 } from "@pollen-robotics/reachy-mini-sdk";
 import "./ReachyRobot.css";
 
-export type ReachyRobotAction = "three-success" | "five-missed";
+export type ReachyRobotAction =
+  | "dance-start"
+  | "dance-stop"
+  | "success"
+  | "failure";
 
 export interface ReachyRobotActionEvent {
   id: string;
@@ -24,8 +28,10 @@ const SIMULATOR_BASE_URL = (
   import.meta.env.VITE_REACHY_SIMULATOR_URL || "http://127.0.0.1:8000"
 ).replace(/\/$/, "");
 const REACTION_INTERVAL_MS = 1000;
+const DANCE_POLL_INTERVAL_MS = 500;
 
 type SimulatorStatus = "disconnected" | "connecting" | "connected" | "error";
+type ReactionAction = Extract<ReachyRobotAction, "success" | "failure">;
 
 interface ReactionQueue {
   pending: ReachyRobotActionEvent[];
@@ -33,22 +39,48 @@ interface ReactionQueue {
   lastReactionAt: number;
 }
 
-const ACTION_MOVES: Record<ReachyRobotAction, string> = {
-  "three-success": "dance1",
-  "five-missed": "no1",
+interface DanceLoop {
+  active: boolean;
+  generation: number;
+  timer: ReturnType<typeof setTimeout> | null;
+  simulatorMoveUuid: string | null;
+  requestPending: boolean;
+  robotMoveRequested: boolean;
+  sawRobotMoveRunning: boolean;
+}
+
+const DANCE_MOVE = "dance3";
+
+const ACTION_MOVES: Record<ReactionAction, string> = {
+  success: "dance1",
+  failure: "no1",
 };
 
-const ACTION_LABELS: Record<ReachyRobotAction, string> = {
-  "three-success": "3 réussites",
-  "five-missed": "5 ratés",
+const ACTION_LABELS: Record<ReactionAction, string> = {
+  success: "Succès (>50 %)",
+  failure: "Échec (<50 %)",
 };
+
+function isReactionAction(action: ReachyRobotAction): action is ReactionAction {
+  return action === "success" || action === "failure";
+}
 
 function enqueueReaction(
   queue: ReactionQueue,
   event: ReachyRobotActionEvent,
   dispatch: (event: ReachyRobotActionEvent) => void,
 ) {
-  queue.pending.push(event);
+  const isDanceControl =
+    event.action === "dance-start" || event.action === "dance-stop";
+
+  if (isDanceControl) {
+    if (queue.timer !== null) clearTimeout(queue.timer);
+    queue.timer = null;
+    if (event.action === "dance-start") queue.pending = [];
+    queue.pending.unshift(event);
+  } else {
+    queue.pending.push(event);
+  }
   if (queue.timer !== null) return;
 
   const dispatchNext = () => {
@@ -58,13 +90,14 @@ function enqueueReaction(
       return;
     }
 
-    const delay = Math.max(
-      0,
-      REACTION_INTERVAL_MS - (Date.now() - queue.lastReactionAt),
-    );
+    const isControl =
+      nextEvent.action === "dance-start" || nextEvent.action === "dance-stop";
+    const delay = isControl
+      ? 0
+      : Math.max(0, REACTION_INTERVAL_MS - (Date.now() - queue.lastReactionAt));
     queue.timer = setTimeout(() => {
       queue.timer = null;
-      queue.lastReactionAt = Date.now();
+      if (!isControl) queue.lastReactionAt = Date.now();
       dispatch(nextEvent);
       dispatchNext();
     }, delay);
@@ -97,6 +130,15 @@ export function ReachyRobot({
     timer: null,
     lastReactionAt: 0,
   });
+  const danceLoopRef = useRef<DanceLoop>({
+    active: false,
+    generation: 0,
+    timer: null,
+    simulatorMoveUuid: null,
+    requestPending: false,
+    robotMoveRequested: false,
+    sawRobotMoveRunning: false,
+  });
   const [robots, setRobots] = useState<RobotInfo[]>([]);
   const [status, setStatus] = useState<
     "disconnected" | "connecting" | "connected" | "streaming" | "error"
@@ -118,6 +160,18 @@ export function ReachyRobot({
       if (reactionQueue.timer !== null) clearTimeout(reactionQueue.timer);
       reactionQueue.pending = [];
 
+      const danceLoop = danceLoopRef.current;
+      danceLoop.active = false;
+      danceLoop.generation += 1;
+      if (danceLoop.timer !== null) clearTimeout(danceLoop.timer);
+      if (simulationRef.current && danceLoop.simulatorMoveUuid) {
+        void fetch(`${SIMULATOR_BASE_URL}/api/move/stop`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uuid: danceLoop.simulatorMoveUuid }),
+        }).catch(() => undefined);
+      }
+
       const robot = robotRef.current;
       detachVideoRef.current?.();
       if (robot) {
@@ -135,6 +189,174 @@ export function ReachyRobot({
     },
     [],
   );
+
+  const runSimulatorDanceLoop = useCallback((generation: number) => {
+    const loop = danceLoopRef.current;
+
+    const step = async () => {
+      if (
+        !loop.active ||
+        loop.generation !== generation ||
+        loop.requestPending
+      ) {
+        return;
+      }
+
+      loop.requestPending = true;
+      try {
+        if (loop.simulatorMoveUuid === null) {
+          const response = await fetch(
+            `${SIMULATOR_BASE_URL}/api/move/play/recorded-move-dataset/${EMOTION_DATASET}/${DANCE_MOVE}`,
+            { method: "POST" },
+          );
+          if (!response.ok) {
+            throw new Error(`Le simulateur a répondu ${response.status}.`);
+          }
+
+          const { uuid } = (await response.json()) as { uuid: string };
+          if (!loop.active || loop.generation !== generation) {
+            await fetch(`${SIMULATOR_BASE_URL}/api/move/stop`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ uuid }),
+            });
+            return;
+          }
+          loop.simulatorMoveUuid = uuid;
+        } else {
+          const response = await fetch(
+            `${SIMULATOR_BASE_URL}/api/move/running`,
+          );
+          if (!response.ok) {
+            throw new Error(`Le simulateur a répondu ${response.status}.`);
+          }
+
+          const runningMoves = (await response.json()) as { uuid: string }[];
+          if (
+            !runningMoves.some((move) => move.uuid === loop.simulatorMoveUuid)
+          ) {
+            loop.simulatorMoveUuid = null;
+          }
+        }
+
+        if (loop.active && loop.generation === generation) {
+          loop.timer = setTimeout(
+            () => void step(),
+            loop.simulatorMoveUuid === null ? 0 : DANCE_POLL_INTERVAL_MS,
+          );
+        }
+      } catch (error) {
+        if (loop.generation === generation) {
+          loop.active = false;
+          loop.simulatorMoveUuid = null;
+          setSimulatorStatus("error");
+          setMessage(
+            error instanceof Error
+              ? error.message
+              : "La danse n’a pas pu être envoyée au simulateur.",
+          );
+        }
+      } finally {
+        loop.requestPending = false;
+      }
+    };
+
+    void step();
+  }, []);
+
+  const runRobotDanceLoop = useCallback((generation: number) => {
+    const loop = danceLoopRef.current;
+    const robot = robotRef.current;
+    if (!robot || robot.state !== "streaming") return;
+
+    if (!loop.robotMoveRequested) {
+      const sent = playRobotMove(robot, DANCE_MOVE);
+      if (!sent) {
+        loop.active = false;
+        setMessage("La danse n’a pas pu être envoyée au robot.");
+        return;
+      }
+      loop.robotMoveRequested = true;
+      loop.sawRobotMoveRunning = false;
+    }
+
+    const poll = () => {
+      if (!loop.active || loop.generation !== generation) return;
+
+      if (robot.state !== "streaming") {
+        loop.timer = setTimeout(poll, DANCE_POLL_INTERVAL_MS);
+        return;
+      }
+
+      if (robot.robotState.is_move_running) {
+        loop.sawRobotMoveRunning = true;
+      } else if (loop.sawRobotMoveRunning) {
+        loop.sawRobotMoveRunning = false;
+        loop.robotMoveRequested = playRobotMove(robot, DANCE_MOVE);
+        if (!loop.robotMoveRequested) {
+          loop.active = false;
+          setMessage("La danse n’a pas pu être relancée.");
+          return;
+        }
+        loop.timer = setTimeout(poll, DANCE_POLL_INTERVAL_MS);
+        return;
+      }
+
+      loop.timer = setTimeout(poll, DANCE_POLL_INTERVAL_MS);
+    };
+
+    loop.timer = setTimeout(poll, DANCE_POLL_INTERVAL_MS);
+  }, []);
+
+  const startDance = useCallback(() => {
+    const loop = danceLoopRef.current;
+    if (!loop.active) {
+      loop.active = true;
+      loop.generation += 1;
+      loop.simulatorMoveUuid = null;
+      loop.requestPending = false;
+      loop.robotMoveRequested = false;
+      loop.sawRobotMoveRunning = false;
+    }
+    if (loop.timer !== null || loop.requestPending) return;
+
+    if (simulationRef.current) {
+      if (simulatorStatus === "connected") {
+        runSimulatorDanceLoop(loop.generation);
+      }
+      return;
+    }
+
+    runRobotDanceLoop(loop.generation);
+  }, [runRobotDanceLoop, runSimulatorDanceLoop, simulatorStatus]);
+
+  const stopDance = useCallback(async () => {
+    const loop = danceLoopRef.current;
+    loop.active = false;
+    loop.generation += 1;
+    if (loop.timer !== null) clearTimeout(loop.timer);
+    loop.timer = null;
+    loop.robotMoveRequested = false;
+    loop.sawRobotMoveRunning = false;
+
+    const moveUuid = loop.simulatorMoveUuid;
+    loop.simulatorMoveUuid = null;
+    loop.requestPending = false;
+    if (simulationRef.current && moveUuid) {
+      try {
+        const response = await fetch(`${SIMULATOR_BASE_URL}/api/move/stop`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ uuid: moveUuid }),
+        });
+        if (!response.ok && response.status !== 404) {
+          setMessage(`L’arrêt de dance3 a répondu ${response.status}.`);
+        }
+      } catch {
+        setMessage("Impossible d’arrêter dance3 dans le simulateur.");
+      }
+    }
+  }, []);
 
   const connect = async () => {
     setIsBusy(true);
@@ -192,6 +414,7 @@ export function ReachyRobot({
       await robot.ensureAwake();
       setStatus("streaming");
       setMessage("Reachy Mini est prêt.");
+      if (danceLoopRef.current.active) startDance();
     } catch (error) {
       setStatus("error");
       setMessage(
@@ -205,6 +428,7 @@ export function ReachyRobot({
   };
 
   const disconnect = async () => {
+    await stopDance();
     const robot = robotRef.current;
     robotRef.current = null;
     detachVideoRef.current?.();
@@ -221,36 +445,54 @@ export function ReachyRobot({
     }
   };
 
-  const dispatchReaction = useCallback((event: ReachyRobotActionEvent) => {
-    setDisplayedAction(event);
-    if (simulationRef.current) {
-      const moveName = encodeURIComponent(ACTION_MOVES[event.action]);
-      void fetch(
-        `${SIMULATOR_BASE_URL}/api/move/play/recorded-move-dataset/${EMOTION_DATASET}/${moveName}`,
-        { method: "POST" },
-      )
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`Le simulateur a répondu ${response.status}.`);
-          }
-        })
-        .catch((error: unknown) => {
-          setSimulatorStatus("error");
-          setMessage(
-            error instanceof Error
-              ? error.message
-              : "Impossible d’envoyer le mouvement au simulateur.",
-          );
-        });
-      return;
-    }
+  const dispatchReaction = useCallback(
+    (event: ReachyRobotActionEvent) => {
+      if (event.action === "dance-start") {
+        setDisplayedAction(event);
+        startDance();
+        return;
+      }
+      if (event.action === "dance-stop") {
+        setDisplayedAction(event);
+        void stopDance();
+        return;
+      }
+      if (!isReactionAction(event.action)) return;
+      const reactionAction = event.action;
 
-    const robot = robotRef.current;
-    if (robot?.state !== "streaming") return;
+      setDisplayedAction(event);
+      void stopDance().then(() => {
+        if (simulationRef.current) {
+          const moveName = encodeURIComponent(ACTION_MOVES[reactionAction]);
+          void fetch(
+            `${SIMULATOR_BASE_URL}/api/move/play/recorded-move-dataset/${EMOTION_DATASET}/${moveName}`,
+            { method: "POST" },
+          )
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`Le simulateur a répondu ${response.status}.`);
+              }
+            })
+            .catch((error: unknown) => {
+              setSimulatorStatus("error");
+              setMessage(
+                error instanceof Error
+                  ? error.message
+                  : "Impossible d’envoyer le mouvement au simulateur.",
+              );
+            });
+          return;
+        }
 
-    const sent = playRobotMove(robot, ACTION_MOVES[event.action]);
-    if (!sent) setMessage("Le mouvement n’a pas pu être envoyé au robot.");
-  }, []);
+        const robot = robotRef.current;
+        if (robot?.state !== "streaming") return;
+
+        const sent = playRobotMove(robot, ACTION_MOVES[reactionAction]);
+        if (!sent) setMessage("Le mouvement n’a pas pu être envoyé au robot.");
+      });
+    },
+    [startDance, stopDance],
+  );
 
   useEffect(() => {
     const currentAction = action;
@@ -260,7 +502,7 @@ export function ReachyRobot({
     enqueueReaction(reactionQueueRef.current, currentAction, dispatchReaction);
   }, [action, dispatchReaction]);
 
-  const runTestAction = (nextAction: ReachyRobotAction) => {
+  const runTestAction = (nextAction: ReactionAction) => {
     const id = testActionId + 1;
     setTestActionId(id);
     enqueueReaction(
@@ -284,6 +526,14 @@ export function ReachyRobot({
       setMessage(
         "Simulateur officiel connecté. La vue 3D est dans sa fenêtre.",
       );
+      const danceLoop = danceLoopRef.current;
+      if (
+        danceLoop.active &&
+        danceLoop.timer === null &&
+        !danceLoop.requestPending
+      ) {
+        runSimulatorDanceLoop(danceLoop.generation);
+      }
     } catch (error) {
       setSimulatorStatus("error");
       setMessage(
@@ -298,6 +548,7 @@ export function ReachyRobot({
 
   const selectMode = async (nextIsSimulation: boolean) => {
     if (isBusy || nextIsSimulation === isSimulation) return;
+    await stopDance();
     const reactionQueue = reactionQueueRef.current;
     if (reactionQueue.timer !== null) clearTimeout(reactionQueue.timer);
     reactionQueue.timer = null;
@@ -525,7 +776,7 @@ export function ReachyRobot({
         <div className="reachy-robot__tests">
           <p>Tester les réactions</p>
           <div>
-            {(Object.keys(ACTION_LABELS) as ReachyRobotAction[]).map(
+            {(Object.keys(ACTION_LABELS) as ReactionAction[]).map(
               (testActionName) => (
                 <button
                   key={testActionName}
