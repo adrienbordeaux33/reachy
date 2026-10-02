@@ -16,6 +16,7 @@ import {GameClock} from "../../game/clock/GameClock.ts";
 import { DefaultGameEngine } from "../../game/engine/DefaultGameEngine";
 import { attachKeyboardInput } from "../input/keyboardInput";
 import type {PlayMode} from "../../game/model/PlayMode.ts";
+import type {Instrument} from "../../audio/Instrument.ts";
 
 
 const MIN_PLAYBACK_RATE = 0.25;
@@ -32,6 +33,7 @@ export interface SongGameResult {
 
 interface SongPianoHeroProps{
     songSource: string;
+    instrument?: Instrument;
     tempo : number;
     isPaused?: boolean;
     playMode: "listen" | "play";
@@ -43,7 +45,7 @@ const EMPTY_PRESSED_NOTES = new Set<number>();
 
 const LEAD_IN = NOTE_TRAVEL_TIME;
 
-export default function SongPianoHero({songSource, tempo, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
+export default function SongPianoHero({songSource, tempo, instrument, isPaused, playMode, restartKey, onFinished} : SongPianoHeroProps) {
 
     const {song, engine, timeline} = useMemo(() => {
         const parser = new TxtMusicParser();
@@ -79,12 +81,12 @@ export default function SongPianoHero({songSource, tempo, isPaused, playMode, re
     const playbackRate = Math.min(MAX_PLAYBACK_RATE, Math.max(MIN_PLAYBACK_RATE, tempo / 100,));
     const currentPlaybackRateRef = useRef(playbackRate);
 
-    const playerRef =
-        useRef<MusicPlayer | null>(null);
+    const playerRef = useRef<MusicPlayer | null>(null);
 
     const clockRef = useRef(new GameClock());
 
     const audioContextRef = useRef<AudioContext | null>(null);
+    const currentInstrumentRef = useRef(instrument);
 
     const [isPlaying, setIsPlaying] = useState(false);
 
@@ -194,7 +196,8 @@ export default function SongPianoHero({songSource, tempo, isPaused, playMode, re
                 audioContext,
                 songStartTime,
                 playbackRate,
-                0
+                0,
+                instrument
             );
 
             clockRef.current.start(
@@ -206,7 +209,7 @@ export default function SongPianoHero({songSource, tempo, isPaused, playMode, re
 
             setPressedNotes(new Set());
             setIsPlaying(true);
-        }, [engine, song, syncGameState, playbackRate]);
+        }, [engine, song, syncGameState, playbackRate, instrument]);
 
     useEffect(() => {
         const clock = clockRef.current;
@@ -323,7 +326,7 @@ export default function SongPianoHero({songSource, tempo, isPaused, playMode, re
         return () => {
             cancelAnimationFrame(frameId);
         };
-    }, [getSongTime, syncGameState, onFinished, engine]);
+    }, [getSongTime, syncGameState, onFinished, engine, playMode]);
     useEffect(() => {
         const audioContext =
             audioContextRef.current;
@@ -417,6 +420,46 @@ export default function SongPianoHero({songSource, tempo, isPaused, playMode, re
         playbackRate,
         isPlaying,
         song,
+        getSongTime,
+    ]);
+
+    useEffect(() => {
+        const previousInstrument =
+            currentInstrumentRef.current;
+
+        if (previousInstrument === instrument) {
+            return;
+        }
+
+        currentInstrumentRef.current =
+            instrument;
+
+        const audioContext =
+            audioContextRef.current;
+
+        if (
+            audioContext === null ||
+            !isPlaying
+        ) {
+            return;
+        }
+
+        const songTime =
+            getSongTime();
+
+        playerRef.current?.play(
+            song,
+            audioContext,
+            audioContext.currentTime,
+            playbackRate,
+            songTime,
+            instrument,
+        );
+    }, [
+        instrument,
+        isPlaying,
+        song,
+        playbackRate,
         getSongTime,
     ]);
 

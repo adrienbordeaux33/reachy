@@ -7,10 +7,11 @@ import SongPianoHero, {type SongGameResult} from "../components/song-piano/SongP
 import { EndGamePopup } from "../components/EndGamePopup";
 import {getSongDefinition, type SongId,} from "../music/library/SongLibrary";
 import type {PlayMode} from "../game/model/PlayMode.ts";
+import type {Instrument} from "../audio/Instrument.ts";
 
 type GameState = {
     musicMode?: "upload" | "library";
-    instrument?: "piano" | "guitar" | "bass";
+    instrument?: Instrument;
     songId?: SongId;
 };
 
@@ -19,9 +20,14 @@ function GamePage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const { musicMode, instrument, songId } =
-        (location.state as GameState) ?? {};
+    const { musicMode,
+        instrument: initialInstrument,
+        songId } = (location.state as GameState) ?? {};
+
     const selectedSong = getSongDefinition(songId ?? "mario");
+
+    const [selectedInstrument, setSelectedInstrument] = useState<Instrument>(initialInstrument ?? "piano");
+    const [isInstrumentSelectorOpen, setIsInstrumentSelectorOpen] = useState(false);
 
     // États qui seront partagés avec le futur PianoHero
     const [playMode, setPlayMode] = useState<PlayMode>("play");
@@ -53,8 +59,11 @@ function GamePage() {
     const handleRestart = () => {
         setGameResult(null);
 
-        setRestartKey((value) => value + 1,);
+        setRestartKey(
+            (value) => value + 1,
+        );
 
+        setIsInstrumentSelectorOpen(false);
         setIsPaused(false);
     };
 
@@ -83,10 +92,10 @@ function GamePage() {
                 songSource={selectedSong.source}
                 playMode={playMode}
                 tempo={tempo}
+                instrument={selectedInstrument}
                 isPaused={isPaused}
                 restartKey={restartKey}
                 onFinished={handleGameFinished}
-
             />
 
             <MediaPlayer
@@ -99,12 +108,24 @@ function GamePage() {
 
             {isPaused && (
                 <PauseMenu
-                    onResume={() => setIsPaused(false)}
+                    onResume={() => {
+                        setIsInstrumentSelectorOpen(false);
+                        setIsPaused(false);
+                    }}
                     onRestart={handleRestart}
                     onChangeInstrument={() => {
-                        console.log("Changer instrument");
+                        setIsInstrumentSelectorOpen(
+                            (previous) => !previous,
+                        );
                     }}
                     onQuit={() => navigate("/")}
+                    showInstrumentSelector={
+                        isInstrumentSelectorOpen
+                    }
+                    instrument={selectedInstrument}
+                    onInstrumentChange={
+                        setSelectedInstrument
+                    }
                 />
             )}
 
@@ -123,7 +144,7 @@ function GamePage() {
             {/* Informations temporaires pour le développement */}
             <div className="mt-4 text-center text-sm text-white/50">
                 <p>Source : {musicMode}</p>
-                <p>Instrument : {instrument}</p>
+                <p>Instrument : {initialInstrument}</p>
                 <p>Pause : {isPaused ? "oui" : "non"}</p>
                 <p>Morceau : {songId ?? "aucun"}</p>
             </div>
