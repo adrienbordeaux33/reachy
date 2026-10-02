@@ -111,7 +111,7 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
   const previousRestartKeyRef = useRef(restartKey);
   const lastUiStateRef = useRef(engine.getState());
   const onRobotEventRef = useRef(onRobotEvent);
-  const consecutiveMissesRef = useRef(0);
+  const robotDanceWantedRef = useRef(false);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [pressedNotes, setPressedNotes] = useState<Set<number>>(
@@ -156,24 +156,6 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
 
     lastUiStateRef.current = { ...next };
     setGameState({ ...next });
-
-    if (next.status === "playing" && previous.status !== "playing") {
-      consecutiveMissesRef.current = 0;
-    }
-
-    if (next.misses > previous.misses) {
-      const previousMissStreak = consecutiveMissesRef.current;
-      consecutiveMissesRef.current += next.misses - previous.misses;
-
-      if (previousMissStreak < 5 && consecutiveMissesRef.current >= 5) {
-        onRobotEventRef.current?.("five-missed");
-      }
-    }
-
-    if (next.hits > previous.hits) {
-      consecutiveMissesRef.current = 0;
-      if (next.combo === 3) onRobotEventRef.current?.("three-success");
-    }
   }, [engine]);
 
   const startGame = useCallback(async () => {
@@ -195,7 +177,7 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
 
     playerRef.current = player;
     hasFinishedRef.current = false;
-    consecutiveMissesRef.current = 0;
+    robotDanceWantedRef.current = true;
     engine.restart();
     syncGameState();
 
@@ -204,6 +186,7 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
     clockRef.current.setPlaybackRate(playbackRate);
     setPressedNotes(new Set());
     setIsPlaying(true);
+    onRobotEventRef.current?.("dance-start");
   }, [engine, instrument, playbackRate, song, syncGameState]);
 
   useEffect(() => {
@@ -258,6 +241,18 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
         hasFinishedRef.current = true;
         playerRef.current?.stop();
         setIsPlaying(false);
+        robotDanceWantedRef.current = false;
+
+        const attempts = state.hits + state.misses + state.wrongHits;
+        const successRate = attempts === 0 ? 0 : state.hits / attempts;
+        if (successRate > 0.5) {
+          onRobotEventRef.current?.("success");
+        } else if (successRate < 0.5) {
+          onRobotEventRef.current?.("failure");
+        } else {
+          onRobotEventRef.current?.("dance-stop");
+        }
+
         onFinished({
           mode: playMode,
           score: state.score,
@@ -273,6 +268,23 @@ export default function SongPianoHero({onRobotEvent, songSource, songFormat, tem
     frameId = requestAnimationFrame(updateGame);
     return () => cancelAnimationFrame(frameId);
   }, [engine, getSongTime, onFinished, playMode, syncGameState]);
+
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    if (isPaused) {
+      if (robotDanceWantedRef.current) {
+        robotDanceWantedRef.current = false;
+        onRobotEventRef.current?.("dance-stop");
+      }
+      return;
+    }
+
+    if (!robotDanceWantedRef.current) {
+      robotDanceWantedRef.current = true;
+      onRobotEventRef.current?.("dance-start");
+    }
+  }, [isPaused, isPlaying]);
 
   useEffect(() => {
     const audioContext = audioContextRef.current;

@@ -369,11 +369,11 @@
   outline-offset: 1px;
 }
 
-.reachy-robot[data-action="three-success"] .reachy-robot__head {
+.reachy-robot[data-action="success"] .reachy-robot__head {
   animation: reachy-sharp-side-tilt 760ms ease-in-out 1;
 }
 
-.reachy-robot[data-action="five-missed"] .reachy-robot__head {
+.reachy-robot[data-action="failure"] .reachy-robot__head {
   animation: reachy-no-way 720ms ease-in-out 1;
 }
 
